@@ -59,18 +59,19 @@ class VC(BaseImageDataset):
 
     def _process_dir(self, dir_path, relabel=False):
         img_paths = glob.glob(osp.join(dir_path, '*.jpg'))
-        pattern = re.compile(r'([-\d]+)_c(\d)')
+        # pattern = re.compile(r'([-\d]+)_c(\d)')
 
         pid_container = set()
         for img_path in img_paths:
-            pid, _ = map(int, pattern.search(img_path).groups())
+            pid = int(img_path[-17:-14])
             if pid == -1: continue  # junk images are just ignored
             pid_container.add(pid)
         pid2label = {pid: label for label, pid in enumerate(pid_container)}
 
         dataset = []
         for img_path in img_paths:
-            pid, camid = map(int, pattern.search(img_path).groups())
+            pid = int(img_path[-17:-14])
+            camid = int(img_path[-11])
             if pid == -1: continue  # junk images are just ignored
             assert 0 <= pid <= 1501  # pid == 0 means background
             assert 1 <= camid <= 6
