@@ -129,7 +129,7 @@ _C.SOLVER.WARMUP_ITERS = 500
 _C.SOLVER.WARMUP_METHOD = "linear"
 
 # epoch number of saving checkpoints
-_C.SOLVER.CHECKPOINT_PERIOD = 50
+_C.SOLVER.CHECKPOINT_PERIOD = 20
 # iteration of display training log
 _C.SOLVER.LOG_PERIOD = 100
 # epoch number of validation
