@@ -13,6 +13,7 @@ from ignite.handlers import ModelCheckpoint, Timer
 from ignite.metrics import RunningAverage
 
 from utils.reid_metric import R1_mAP
+from numpy import *
 
 global ITER
 ITER = 0
@@ -131,6 +132,36 @@ def create_supervised_evaluator(model, metrics,
     return engine
 
 
+def part_trainer(model, optimizer, loss_fn, device=None):
+
+    if device:
+        if torch.cuda.device_count() > 1:
+            model = nn.DataParallel(model)
+        model.to(device)
+
+    def _update(engine, batch):
+        model.train()
+        optimizer.zero_grad()
+        img, target = batch
+        img = img.to(device) if torch.cuda.device_count() >= 1 else img
+        target = target.to(device) if torch.cuda.device_count() >= 1 else target
+        score, feat = model(img)
+        loss_part = []
+        ten = []
+        for i in range(0,10):
+            loss_part[i] = loss_fn(score[i], feat[i], target)
+            ten.append(torch.tensor(1.0).cuda())
+        torch.autograd.backward(loss_part, ten)
+        optimizer.step()
+        loss = mean(loss_part)
+
+        # compute acc
+        acc = (score.max(1)[1] == target).float().mean()
+        return loss.item(), acc.item()
+
+    return Engine(_update)
+
+
 def do_train(
         cfg,
         model,
@@ -151,7 +182,10 @@ def do_train(
 
     logger = logging.getLogger("reid_baseline.train")
     logger.info("Start training")
-    trainer = create_supervised_trainer(model, optimizer, loss_fn, device=device)
+    if cfg.MODEL.CHANGE == 'strong':
+        trainer = create_supervised_trainer(model, optimizer, loss_fn, device=device)
+    elif cfg.MODEL.CHANGE == 'part':
+        trainer = part_trainer(model, optimizer, loss_fn, device=device)
     evaluator = create_supervised_evaluator(model, metrics={'r1_mAP': R1_mAP(num_query, max_rank=50, feat_norm=cfg.TEST.FEAT_NORM)}, device=device)
     checkpointer = ModelCheckpoint(output_dir, cfg.MODEL.NAME, checkpoint_period, n_saved=10, require_empty=False)
     timer = Timer(average=True)
