@@ -18,6 +18,7 @@ from numpy import *
 global ITER
 ITER = 0
 
+
 def create_supervised_trainer(model, optimizer, loss_fn,
                               device=None):
     """
@@ -41,7 +42,7 @@ def create_supervised_trainer(model, optimizer, loss_fn,
     def _update(engine, batch):
         model.train()
         optimizer.zero_grad()
-        img, target = batch
+        img, target, _, _ = batch
         img = img.to(device) if torch.cuda.device_count() >= 1 else img
         target = target.to(device) if torch.cuda.device_count() >= 1 else target
         score, feat = model(img)
@@ -55,8 +56,41 @@ def create_supervised_trainer(model, optimizer, loss_fn,
     return Engine(_update)
 
 
-def create_supervised_trainer_with_center(model, center_criterion, optimizer, optimizer_center, loss_fn, cetner_loss_weight,
-                              device=None):
+def part_trainer(model, optimizer, loss_fn, device=None):
+    if device:
+        if torch.cuda.device_count() > 1:
+            model = nn.DataParallel(model)
+        model.to(device)
+
+    def _update(engine, batch):
+        model.train()
+        optimizer.zero_grad()
+        img, target, _, path = batch
+        img = img.to(device) if torch.cuda.device_count() >= 1 else img
+        target = target.to(device) if torch.cuda.device_count() >= 1 else target
+        score, feat = model(img, path)
+        loss = loss_fn(score, feat, target)
+        loss.backward()
+        optimizer.step()
+        # loss_part = []
+        # ten = []
+        # for i in range(0, 10):
+        #     loss_part[i] = loss_fn(score[i], feat[i], target)
+        #     ten.append(torch.tensor(1.0).cuda())
+        # torch.autograd.backward(loss_part, ten)
+        # optimizer.step()
+        # loss = mean(loss_part)
+
+        # compute acc
+        acc = (score.max(1)[1] == target).float().mean()
+        return loss.item(), acc.item()
+
+    return Engine(_update)
+
+
+def create_supervised_trainer_with_center(model, center_criterion, optimizer, optimizer_center, loss_fn,
+                                          cetner_loss_weight,
+                                          device=None):
     """
     Factory function for creating a trainer for supervised models
 
@@ -119,7 +153,7 @@ def create_supervised_evaluator(model, metrics,
     def _inference(engine, batch):
         model.eval()
         with torch.no_grad():
-            data, pids, camids = batch
+            data, pids, camids, _ = batch
             data = data.to(device) if torch.cuda.device_count() >= 1 else data
             feat = model(data)
             return feat, pids, camids
@@ -132,34 +166,37 @@ def create_supervised_evaluator(model, metrics,
     return engine
 
 
-def part_trainer(model, optimizer, loss_fn, device=None):
+def part_evaluator(model, metrics, device=None):
+    """
+    Factory function for creating an evaluator for supervised models
 
+    Args:
+        model (`torch.nn.Module`): the model to train
+        metrics (dict of str - :class:`ignite.metrics.Metric`): a map of metric names to Metrics
+        device (str, optional): device type specification (default: None).
+            Applies to both model and batches.
+    Returns:
+        Engine: an evaluator engine with supervised inference function
+    """
     if device:
         if torch.cuda.device_count() > 1:
             model = nn.DataParallel(model)
         model.to(device)
 
-    def _update(engine, batch):
-        model.train()
-        optimizer.zero_grad()
-        img, target = batch
-        img = img.to(device) if torch.cuda.device_count() >= 1 else img
-        target = target.to(device) if torch.cuda.device_count() >= 1 else target
-        score, feat = model(img)
-        loss_part = []
-        ten = []
-        for i in range(0,10):
-            loss_part[i] = loss_fn(score[i], feat[i], target)
-            ten.append(torch.tensor(1.0).cuda())
-        torch.autograd.backward(loss_part, ten)
-        optimizer.step()
-        loss = mean(loss_part)
+    def _inference(engine, batch):
+        model.eval()
+        with torch.no_grad():
+            data, pids, camids, _ = batch
+            data = data.to(device) if torch.cuda.device_count() >= 1 else data
+            feat = model(data)
+            return feat, pids, camids
 
-        # compute acc
-        acc = (score.max(1)[1] == target).float().mean()
-        return loss.item(), acc.item()
+    engine = Engine(_inference)
 
-    return Engine(_update)
+    for name, metric in metrics.items():
+        metric.attach(engine, name)
+
+    return engine
 
 
 def do_train(
@@ -184,13 +221,17 @@ def do_train(
     logger.info("Start training")
     if cfg.MODEL.CHANGE == 'strong':
         trainer = create_supervised_trainer(model, optimizer, loss_fn, device=device)
+        evaluator = create_supervised_evaluator(model, metrics={
+            'r1_mAP': R1_mAP(num_query, max_rank=50, feat_norm=cfg.TEST.FEAT_NORM)}, device=device)
     elif cfg.MODEL.CHANGE == 'part':
         trainer = part_trainer(model, optimizer, loss_fn, device=device)
-    evaluator = create_supervised_evaluator(model, metrics={'r1_mAP': R1_mAP(num_query, max_rank=50, feat_norm=cfg.TEST.FEAT_NORM)}, device=device)
+        evaluator = create_supervised_evaluator(model, metrics={
+            'r1_mAP': R1_mAP(num_query, max_rank=50, feat_norm=cfg.TEST.FEAT_NORM)}, device=device)
+
     checkpointer = ModelCheckpoint(output_dir, cfg.MODEL.NAME, checkpoint_period, n_saved=10, require_empty=False)
     timer = Timer(average=True)
 
-    trainer.add_event_handler(Events.EPOCH_COMPLETED, checkpointer, {'model': model,'optimizer': optimizer})
+    trainer.add_event_handler(Events.EPOCH_COMPLETED, checkpointer, {'model': model, 'optimizer': optimizer})
     timer.attach(trainer, start=Events.EPOCH_STARTED, resume=Events.ITERATION_STARTED,
                  pause=Events.ITERATION_COMPLETED, step=Events.ITERATION_COMPLETED)
 
@@ -263,8 +304,10 @@ def do_train_with_center(
 
     logger = logging.getLogger("reid_baseline.train")
     logger.info("Start training")
-    trainer = create_supervised_trainer_with_center(model, center_criterion, optimizer, optimizer_center, loss_fn, cfg.SOLVER.CENTER_LOSS_WEIGHT, device=device)
-    evaluator = create_supervised_evaluator(model, metrics={'r1_mAP': R1_mAP(num_query, max_rank=50, feat_norm=cfg.TEST.FEAT_NORM)}, device=device)
+    trainer = create_supervised_trainer_with_center(model, center_criterion, optimizer, optimizer_center, loss_fn,
+                                                    cfg.SOLVER.CENTER_LOSS_WEIGHT, device=device)
+    evaluator = create_supervised_evaluator(model, metrics={
+        'r1_mAP': R1_mAP(num_query, max_rank=50, feat_norm=cfg.TEST.FEAT_NORM)}, device=device)
     checkpointer = ModelCheckpoint(output_dir, cfg.MODEL.NAME, checkpoint_period, n_saved=10, require_empty=False)
     timer = Timer(average=True)
 

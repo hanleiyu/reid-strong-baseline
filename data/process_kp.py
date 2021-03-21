@@ -18,8 +18,8 @@ def get_json_data(path, h, w):
             for i in range(0, 25):
                 pose[3 * i] *= h
                 pose[3 * i + 1] *= w
-                pose[3 * i] = float('%.6f' % pose[3 * i])
-                pose[3 * i + 1] = float('%.6f' % pose[3 * i + 1])
+                pose[3 * i] = round(pose[3 * i])
+                pose[3 * i + 1] = round(pose[3 * i + 1])
             # print("after", pose)
     f.close()
 

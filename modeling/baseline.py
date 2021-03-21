@@ -10,6 +10,7 @@ from torch import nn
 from .backbones.resnet import ResNet, BasicBlock, Bottleneck
 from .backbones.senet import SENet, SEResNetBottleneck, SEBottleneck, SEResNeXtBottleneck
 from .backbones.resnet_ibn_a import resnet50_ibn_a
+from .demo import *
 
 
 def weights_init_kaiming(m):
@@ -153,8 +154,7 @@ class Baseline(nn.Module):
     def forward(self, x):
 
         global_feat = self.gap(self.base(x))  # (b, 2048, 1, 1)
-        # global_feat = global_feat.view(global_feat.shape[0], -1)  # flatten to (bs, 2048)
-        global_feat = global_feat.view(256,128)
+        global_feat = global_feat.view(global_feat.shape[0], -1)  # flatten to (bs, 2048)
 
         if self.neck == 'no':
             feat = global_feat
@@ -184,7 +184,7 @@ class Part(nn.Module):
     in_planes = 2048
 
     def __init__(self, num_classes, last_stride, model_path, neck, neck_feat, model_name, pretrain_choice):
-        super(Baseline, self).__init__()
+        super(Part, self).__init__()
         if model_name == 'resnet18':
             self.in_planes = 512
             self.base = ResNet(last_stride=last_stride,
@@ -277,8 +277,8 @@ class Part(nn.Module):
             self.base.load_param(model_path)
             print('Loading pretrained ImageNet model......')
 
-        self.gap = nn.AdaptiveAvgPool2d(1)
-        # self.gap = nn.AdaptiveMaxPool2d(1)
+        # self.gap = nn.AdaptiveAvgPool2d((256, 128))
+        self.gap = nn.AdaptiveMaxPool2d(1)
         self.num_classes = num_classes
         self.neck = neck
         self.neck_feat = neck_feat
@@ -295,26 +295,27 @@ class Part(nn.Module):
             self.bottleneck.apply(weights_init_kaiming)
             self.classifier.apply(weights_init_classifier)
 
-    def forward(self, x):
+    def forward(self, x, path):
 
-        global_feat = self.gap(self.base(x))  # (b, 2048, 1, 1)
-        global_feat = global_feat.view(global_feat.shape[0], -1)  # flatten to (bs, 2048)
+        global_feat = self.gap(self.base(x))
+        feat1 = cal_feature(input, 1, 8, path)
+
 
         if self.neck == 'no':
-            feat = global_feat
+            feat1 = global_feat
         elif self.neck == 'bnneck':
-            feat = self.bottleneck(global_feat)  # normalize for angular softmax
+            feat1 = self.bottleneck(feat1)  # normalize for angular softmax
 
         if self.training:
-            cls_score = self.classifier(feat)
-            return cls_score, global_feat  # global feature for triplet loss
+            cls_score = self.classifier(feat1)
+            return cls_score, feat1  # global feature for triplet loss
         else:
             if self.neck_feat == 'after':
                 # print("Test with feature after BN")
-                return feat
+                return feat1
             else:
                 # print("Test with feature before BN")
-                return global_feat
+                return feat1
 
     def load_param(self, trained_path):
         param_dict = torch.load(trained_path)
