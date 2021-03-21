@@ -153,7 +153,8 @@ class Baseline(nn.Module):
     def forward(self, x):
 
         global_feat = self.gap(self.base(x))  # (b, 2048, 1, 1)
-        global_feat = global_feat.view(global_feat.shape[0], -1)  # flatten to (bs, 2048)
+        # global_feat = global_feat.view(global_feat.shape[0], -1)  # flatten to (bs, 2048)
+        global_feat = global_feat.view(256,128)
 
         if self.neck == 'no':
             feat = global_feat
