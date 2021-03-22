@@ -94,8 +94,5 @@ def cal_feature(input, n1, n2, path):
 # path = ["", ""]
 # feature = cal_feature(input, 1, 2, path)
 
-# a = [('a',22,1), ('b',21,2), ('c')]
-# print(a[0][0])
-# print(a[0][1])
 
 

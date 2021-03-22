@@ -72,20 +72,18 @@ def part_trainer(model, optimizer, loss_fn, device=None):
         # loss = loss_fn(score, feat, target)
         # loss.backward()
         # optimizer.step()
-        loss_part = [0, 0, 0]
-        ten = []
-        for i in range(0, 3):
+        loss_part = [0 for _ in range(len(feat))]
+        acc = [0 for _ in range(len(feat))]
+        ten = [torch.tensor(1.0).cuda() for _ in range(len(feat))]
+        for i in range(len(feat)):
             loss_part[i] = loss_fn(score[i], feat[i], target)
-            ten.append(torch.tensor(1.0).cuda())
+            acc[i] = (score[i].max(1)[1] == target).float().mean()
         torch.autograd.backward(loss_part, ten)
         optimizer.step()
         # loss = mean(loss_part)
 
         # compute acc
-        acc1 = (score[0].max(1)[1] == target).float().mean()
-        acc2 = (score[1].max(1)[1] == target).float().mean()
-        acc = (score[2].max(1)[1] == target).float().mean()
-        return loss_part, acc.item(), acc1.item(), acc2.item()
+        return loss_part, acc
 
     return Engine(_update)
 
@@ -240,10 +238,15 @@ def do_train(
     # average metric to attach on trainer
     RunningAverage(output_transform=lambda x: x[0][0]).attach(trainer, 'avg_loss1')
     RunningAverage(output_transform=lambda x: x[0][1]).attach(trainer, 'avg_loss2')
-    RunningAverage(output_transform=lambda x: x[0][2]).attach(trainer, 'avg_loss')
-    RunningAverage(output_transform=lambda x: x[1]).attach(trainer, 'avg_acc1')
-    RunningAverage(output_transform=lambda x: x[2]).attach(trainer, 'avg_acc2')
-    RunningAverage(output_transform=lambda x: x[3]).attach(trainer, 'avg_acc')
+    RunningAverage(output_transform=lambda x: x[0][2]).attach(trainer, 'avg_loss3')
+    RunningAverage(output_transform=lambda x: x[0][3]).attach(trainer, 'avg_loss4')
+    RunningAverage(output_transform=lambda x: x[0][4]).attach(trainer, 'avg_loss')
+
+    RunningAverage(output_transform=lambda x: x[1][0]).attach(trainer, 'avg_acc1')
+    RunningAverage(output_transform=lambda x: x[1][1]).attach(trainer, 'avg_acc2')
+    RunningAverage(output_transform=lambda x: x[1][2]).attach(trainer, 'avg_acc3')
+    RunningAverage(output_transform=lambda x: x[1][3]).attach(trainer, 'avg_acc4')
+    RunningAverage(output_transform=lambda x: x[1][4]).attach(trainer, 'avg_acc')
 
     @trainer.on(Events.STARTED)
     def start_training(engine):
@@ -259,11 +262,13 @@ def do_train(
         ITER += 1
 
         if ITER % log_period == 0:
-            logger.info("Epoch[{}] Iteration[{}/{}] Loss: {:.3f}, Loss1: {:.3f}, Loss2: {:.3f},"
-                        "Acc: {:.3f}, Acc1: {:.3f}, Acc2: {:.3f},Base Lr: {:.2e}"
+            logger.info("Epoch[{}] Iteration[{}/{}] Loss: {:.3f}, Loss1: {:.3f}, Loss2: {:.3f}, Loss3: {:.3f}, Loss4: {:.3f},"
+                        "Acc: {:.3f}, Acc1: {:.3f}, Acc2: {:.3f}, Acc3: {:.3f}, Acc4: {:.3f},Base Lr: {:.2e}"
                         .format(engine.state.epoch, ITER, len(train_loader),
-                                engine.state.metrics['avg_loss'], engine.state.metrics['avg_loss1'], engine.state.metrics['avg_loss2'],
+                                engine.state.metrics['avg_loss'], engine.state.metrics['avg_loss1'],
+                                engine.state.metrics['avg_loss2'], engine.state.metrics['avg_loss3'], engine.state.metrics['avg_loss4'],
                                 engine.state.metrics['avg_acc'], engine.state.metrics['avg_acc1'], engine.state.metrics['avg_acc2'],
+                                engine.state.metrics['avg_acc3'], engine.state.metrics['avg_acc4'],
                                 scheduler.get_lr()[0]))
         if len(train_loader) == ITER:
             ITER = 0

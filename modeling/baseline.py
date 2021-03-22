@@ -301,11 +301,12 @@ class Part(nn.Module):
         # global_feat = nn.functional.interpolate(global_feat, scale_factor=16, mode='nearest')
         feat1 = cal_feature(global_feat, 1, 8, path)
         feat2 = cal_feature(global_feat, 2, 5, path)
+        feat3 = cal_feature(global_feat, 8, 10, path)
+        feat4 = cal_feature(global_feat, 8, 13, path)
         global_feat = self.gap(global_feat)  # (b, 2048, 1, 1)
         global_feat = global_feat.view(global_feat.shape[0], -1)  # flatten to (bs, 2048)
 
-        # feat3 = cal_feature(global_feat, 8, 10, path)
-        # feat4 = cal_feature(global_feat, 8, 13, path)
+
         # feat5 = cal_feature(global_feat, 1, 8, path)
 
 
@@ -314,14 +315,18 @@ class Part(nn.Module):
         elif self.neck == 'bnneck':
             feat1 = self.bottleneck(feat1)  # normalize for angular softmax
             feat2 = self.bottleneck(feat2)
+            feat3 = self.bottleneck(feat3)
+            feat4 = self.bottleneck(feat4)
             feat = self.bottleneck(global_feat)
 
         if self.training:
             cls_score1 = self.classifier(feat1)
             cls_score2 = self.classifier(feat2)
+            cls_score3 = self.classifier(feat3)
+            cls_score4 = self.classifier(feat4)
             cls_score = self.classifier(feat)
-            score = [cls_score1, cls_score2, cls_score]
-            feats = [feat1, feat2, feat]
+            score = [cls_score1, cls_score2, cls_score3, cls_score4, cls_score]
+            feats = [feat1, feat2, feat3, feat4, feat]
             return score, feats  # global feature for triplet loss
         else:
             if self.neck_feat == 'after':
