@@ -14,5 +14,5 @@ def train_collate_fn(batch):
 
 
 def val_collate_fn(batch):
-    imgs, pids, camids, _ = zip(*batch)
-    return torch.stack(imgs, dim=0), pids, camids
+    imgs, pids, camids, path = zip(*batch)
+    return torch.stack(imgs, dim=0), pids, camids, path

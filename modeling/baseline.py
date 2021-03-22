@@ -296,39 +296,48 @@ class Part(nn.Module):
             self.classifier.apply(weights_init_classifier)
 
     def forward(self, x, path):
-
-        global_feat = self.base(x)
-        # global_feat = nn.functional.interpolate(global_feat, scale_factor=16, mode='nearest')
-        feat1 = cal_feature(global_feat, 1, 8, path, 1)
-        feat2 = cal_feature(global_feat, 2, 5, path, 1)
-        feat3 = cal_feature(global_feat, 8, 10, path, 1)
-        feat4 = cal_feature(global_feat, 8, 13, path, 1)
-        feat5 = cal_feature(global_feat, 0, 0, path, 0)
-        global_feat = self.gap(global_feat)  # (b, 2048, 1, 1)
-        global_feat = global_feat.view(global_feat.shape[0], -1)  # flatten to (bs, 2048)
-
-
-        if self.neck == 'no':
-            feat1 = global_feat
-        elif self.neck == 'bnneck':
-            feat1 = self.bottleneck(feat1)  # normalize for angular softmax
-            feat2 = self.bottleneck(feat2)
-            feat3 = self.bottleneck(feat3)
-            feat4 = self.bottleneck(feat4)
-            feat5 = self.bottleneck(feat5)
-            feat = self.bottleneck(global_feat)
-
         if self.training:
+            global_feat = self.base(x)
+            # global_feat = nn.functional.interpolate(global_feat, scale_factor=16, mode='nearest')
+            feat1 = cal_feature(global_feat, 1, 8, path, 1)
+            feat2 = cal_feature(global_feat, 2, 5, path, 1)
+            # feat3 = cal_feature(global_feat, 8, 10, path, 1)
+            # feat4 = cal_feature(global_feat, 8, 13, path, 1)
+            # feat5 = cal_feature(global_feat, 0, 0, path, 0)
+            global_feat = self.gap(global_feat)  # (b, 2048, 1, 1)
+            global_feat = global_feat.view(global_feat.shape[0], -1)  # flatten to (bs, 2048)
+
+            if self.neck == 'no':
+                feat1 = global_feat
+            elif self.neck == 'bnneck':
+                feat1 = self.bottleneck(feat1)  # normalize for angular softmax
+                feat2 = self.bottleneck(feat2)
+                # feat3 = self.bottleneck(feat3)
+                # feat4 = self.bottleneck(feat4)
+                # feat5 = self.bottleneck(feat5)
+                feat = self.bottleneck(global_feat)
+
             cls_score1 = self.classifier(feat1)
             cls_score2 = self.classifier(feat2)
-            cls_score3 = self.classifier(feat3)
-            cls_score4 = self.classifier(feat4)
-            cls_score5 = self.classifier(feat5)
+            # cls_score3 = self.classifier(feat3)
+            # cls_score4 = self.classifier(feat4)
+            # cls_score5 = self.classifier(feat5)
             cls_score = self.classifier(feat)
-            score = [cls_score1, cls_score2, cls_score3, cls_score4, cls_score5, cls_score]
-            feats = [feat1, feat2, feat3, feat4, feat5, feat]
+            score = [cls_score1, cls_score2, cls_score]
+            feats = [feat1, feat2,  feat]
+            # score = [cls_score1, cls_score2, cls_score3, cls_score4, cls_score5, cls_score]
+            # feats = [feat1, feat2, feat3, feat4, feat5, feat]
             return score, feats  # global feature for triplet loss
         else:
+            global_feat = self.base(x)
+            global_feat = self.gap(global_feat)  # (b, 2048, 1, 1)
+            global_feat = global_feat.view(global_feat.shape[0], -1)  # flatten to (bs, 2048)
+
+            if self.neck == 'no':
+                feat = global_feat
+            elif self.neck == 'bnneck':
+                feat = self.bottleneck(global_feat)
+
             if self.neck_feat == 'after':
                 # print("Test with feature after BN")
                 return feat

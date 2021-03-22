@@ -20,8 +20,8 @@ def get_json_data(path, h, w):
             for i in range(0, 25):
                 pose[3 * i] *= w
                 pose[3 * i + 1] *= h
-                pose[3 * i] = round(pose[3 * i])
-                pose[3 * i + 1] = round(pose[3 * i + 1])
+                pose[3 * i] = math.floor(pose[3 * i])
+                pose[3 * i + 1] = math.floor(pose[3 * i + 1])
             # print("after", pose)
     f.close()
 
@@ -73,15 +73,15 @@ def remove(name, threshold):
 data_path = "/home/yhl/data/VC/"
 
 
-# resize_kp(8, 16, "train")
-# resize_kp(8, 16, "gallery")
-# resize_kp(8, 16, "query")
-# os.remove("/home/yhl/data/VC/kp/train/0338-04-03-08_keypoints.json")
+resize_kp(8, 16, "train")
+resize_kp(8, 16, "gallery")
+resize_kp(8, 16, "query")
+os.remove("/home/yhl/data/VC/kp/train/0338-04-03-08_keypoints.json")
 os.remove("/home/yhl/data/VC/train/0338-04-03-08.jpg")
 
-# remove("train", 0.25)
-# remove("gallery", 0.25)
-# remove("query", 0.25)
+remove("train", 0.25)
+remove("gallery", 0.25)
+remove("query", 0.25)
 #
 # json_paths = glob.glob(osp.join(data_path, 'kp', "train", '*.json'))
 # for p in json_paths:
@@ -89,8 +89,10 @@ os.remove("/home/yhl/data/VC/train/0338-04-03-08.jpg")
 #     with open(p, 'rb') as f:
 #         params = json.load(f)
 #         for i in range(25):
-#             if params[3 * i] >= 8:
+#             if params[3 * i+1] > 16:
 #                 print(p)
 #                 break
 #     f.close()
 
+# img = Image.open("/home/yhl/data/VC/train/0286-01-02-08.jpg")
+# print(img.size)

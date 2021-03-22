@@ -63,14 +63,14 @@ class VC(BaseImageDataset):
 
         pid_container = set()
         for img_path in img_paths:
-            pid = int(img_path[-17:-14])
+            pid = int(img_path[-17:-13])
             if pid == -1: continue  # junk images are just ignored
             pid_container.add(pid)
         pid2label = {pid: label for label, pid in enumerate(pid_container)}
 
         dataset = []
         for img_path in img_paths:
-            pid = int(img_path[-17:-14])
+            pid = int(img_path[-17:-13])
             camid = int(img_path[-11])
             if pid == -1: continue  # junk images are just ignored
             assert 0 <= pid <= 1501  # pid == 0 means background

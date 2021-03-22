@@ -71,9 +71,10 @@ def dda_line_points(pt1, pt2):
             y = y1
 
         for k in range(steps + 1):
-            line.append([math.floor(x + 0.5), math.floor(y + 0.5)])
-            x += xinc
-            y += yinc
+            if math.floor(x + 0.5) <= 7 and math.floor(y + 0.5) <= 15:
+                line.append([math.floor(x + 0.5), math.floor(y + 0.5)])
+                x += xinc
+                y += yinc
 
     return line
 
@@ -89,8 +90,11 @@ def cal_feature(input, n1, n2, path, flag):
         output = torch.empty(size=(len(line), 2048))
         if len(line) > 0:
             for i in range(len(line)):
-                output[i] = input[k, :, line[i][0], line[i][1]]
-            output = output.mean(0, False)
+                if line[i][0] > 7 or line[i][1]> 15:
+                    print(line[i])
+                else:
+                    output[i] = input[k, :, line[i][0], line[i][1]]
+        output = output.mean(0, False)
         outputs[k] = output
 
     return outputs.cuda()
@@ -115,3 +119,4 @@ def cal_feature(input, n1, n2, path, flag):
 # c = a[0, :, t2[0], t2[1]]
 # d = torch.stack((b, c), 0)
 # d.mean(1, False)
+

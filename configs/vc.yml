@@ -5,9 +5,6 @@ MODEL:
   IF_LABELSMOOTH: 'on'
   IF_WITH_CENTER: 'no'
 
-
-
-
 INPUT:
   SIZE_TRAIN: [256, 128]
   SIZE_TEST: [256, 128]
