@@ -31,6 +31,23 @@ def get_json_data(path, n1, n2):
     return t1, t2
 
 
+def get_leg_data(path):
+    t1 = []
+    t2 = []
+    with open(path, 'rb') as f:
+        params = json.load(f)
+        if len(params) > 0:
+            num = 10
+            if params[3 * 10 + 2] <= 0.25 or params[3 * 11 + 2] <= 0.25 \
+                    or (params[3 * 13 + 2] + params[3 * 14 + 2]) > (params[3 * 10 + 2] + params[3 * 11 + 2]):
+                num = 13
+            t1 = [params[3 * num + 1], params[3 * num]]
+            t2 = [params[3 * (num + 1) + 1], params[3 * (num + 1)]]
+    f.close()
+
+    return t1, t2
+
+
 def dda_line_points(pt1, pt2):
     line = []
     if len(pt1) > 0:
@@ -61,13 +78,16 @@ def dda_line_points(pt1, pt2):
     return line
 
 
-def cal_feature(input, n1, n2, path):
+def cal_feature(input, n1, n2, path, flag):
     a = input.data.cpu().numpy()
     outputs = []
 
     for k in range(0, 128):
         output = []
-        pt1, pt2 = get_json_data(get_path(path[k]), n1, n2)
+        if flag:
+            pt1, pt2 = get_json_data(get_path(path[k]), n1, n2)
+        else:
+            pt1, pt2 = get_leg_data(get_path(path[k]))
         line = dda_line_points(pt1, pt2)
         if len(line) > 0:
             for j in range(0, 2048):
