@@ -4,6 +4,7 @@ import math
 import numpy
 import json
 import os.path as osp
+import torch.nn as nn
 
 
 def get_path(p):
@@ -85,9 +86,11 @@ def cal_feature(input, n1, n2, path):
 
 
 # a = torch.randn(128, 2048, 16, 8)
-# m = nn.AdaptiveAvgPool2d((256, 128))
-# input = m(a)
-# print(input.shape)
+# # a = torch.randn(1,1,16,8)
+# print(a.shape)
+# # m = nn.AdaptiveAvgPool2d((256, 128))
+# m = nn.functional.interpolate(a, scale_factor=16, mode='nearest')
+# print(m.shape)
 # path = ["", ""]
 # feature = cal_feature(input, 1, 2, path)
 

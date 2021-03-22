@@ -34,32 +34,52 @@ def write_json_data(path, pose):
 
 data_path = "/home/yhl/data/VC/"
 
-img_paths = glob.glob(osp.join(data_path, 'train/*.jpg'))
-for img_path in img_paths:
-    img = Image.open(img_path)
-    w = 128 / img.size[0]
-    h = 256 / img.size[1]
-    json_path = osp.join(data_path, 'kp/train', img_path[-17:-4] + '_keypoints.json')
-    with open(json_path, 'rb') as f:
-        write_json_data(json_path, get_json_data(json_path, h, w))
+json_paths = glob.glob(osp.join(data_path, 'kp/query/*.json'))
+# num = [0 for _ in range(25)]
+kp = [1, 2, 5, 8, 13, 14]
+num = 0
+for p in json_paths:
+    with open(p, 'rb') as f:
+        flag = 1
+        params = json.load(f)
+        for i in range(len(kp)):
+            if params[3 * kp[i] + 2] <= 0.45:
+                flag = 0
+                break
+        if flag: num +=1
+    f.close()
+print(num)
+# for i in range(25):
+#     if num[i]<1000:
+#         print(i, num[i])
 
-img_paths = glob.glob(osp.join(data_path, 'gallery/*.jpg'))
-for img_path in img_paths:
-    img = Image.open(img_path)
-    w = 128 / img.size[0]
-    h = 256 / img.size[1]
-    json_path = osp.join(data_path, 'kp/gallery', img_path[-17:-4] + '_keypoints.json')
-    with open(json_path, 'rb') as f:
-        write_json_data(json_path, get_json_data(json_path, h, w))
 
-img_paths = glob.glob(osp.join(data_path, 'query/*.jpg'))
-for img_path in img_paths:
-    img = Image.open(img_path)
-    w = 128 / img.size[0]
-    h = 256 / img.size[1]
-    json_path = osp.join(data_path, 'kp/query', img_path[-17:-4] + '_keypoints.json')
-    with open(json_path, 'rb') as f:
-        write_json_data(json_path, get_json_data(json_path, h, w))
+# img_paths = glob.glob(osp.join(data_path, 'train/*.jpg'))
+# for img_path in img_paths:
+#     img = Image.open(img_path)
+#     w = 128 / img.size[0]
+#     h = 256 / img.size[1]
+#     json_path = osp.join(data_path, 'kp/train', img_path[-17:-4] + '_keypoints.json')
+#     with open(json_path, 'rb') as f:
+#         write_json_data(json_path, get_json_data(json_path, h, w))
+#
+# img_paths = glob.glob(osp.join(data_path, 'gallery/*.jpg'))
+# for img_path in img_paths:
+#     img = Image.open(img_path)
+#     w = 128 / img.size[0]
+#     h = 256 / img.size[1]
+#     json_path = osp.join(data_path, 'kp/gallery', img_path[-17:-4] + '_keypoints.json')
+#     with open(json_path, 'rb') as f:
+#         write_json_data(json_path, get_json_data(json_path, h, w))
+#
+# img_paths = glob.glob(osp.join(data_path, 'query/*.jpg'))
+# for img_path in img_paths:
+#     img = Image.open(img_path)
+#     w = 128 / img.size[0]
+#     h = 256 / img.size[1]
+#     json_path = osp.join(data_path, 'kp/query', img_path[-17:-4] + '_keypoints.json')
+#     with open(json_path, 'rb') as f:
+#         write_json_data(json_path, get_json_data(json_path, h, w))
 
 # img_path = "/home/yhl/data/VC/train/0338-04-03-08.jpg"
 # img = Image.open(img_path)

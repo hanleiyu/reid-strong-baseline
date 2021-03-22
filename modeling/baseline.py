@@ -277,8 +277,8 @@ class Part(nn.Module):
             self.base.load_param(model_path)
             print('Loading pretrained ImageNet model......')
 
-        # self.gap = nn.AdaptiveAvgPool2d((256, 128))
-        self.gap = nn.AdaptiveMaxPool2d(1)
+        self.gap = nn.AdaptiveAvgPool2d((256, 128))
+        # self.gap = nn.AdaptiveMaxPool2d(1)
         self.num_classes = num_classes
         self.neck = neck
         self.neck_feat = neck_feat
@@ -297,7 +297,8 @@ class Part(nn.Module):
 
     def forward(self, x, path):
 
-        global_feat = self.gap(self.base(x))
+        global_feat = self.base(x)
+        global_feat = nn.functional.interpolate(global_feat, scale_factor=16, mode='nearest')
         feat1 = cal_feature(input, 1, 8, path)
 
 
