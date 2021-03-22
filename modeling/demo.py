@@ -79,30 +79,21 @@ def dda_line_points(pt1, pt2):
 
 
 def cal_feature(input, n1, n2, path, flag):
-    a = input.data.cpu().numpy()
-    outputs = []
-
+    outputs = torch.empty(size=(128, 2048))
     for k in range(0, 128):
-        output = []
         if flag:
             pt1, pt2 = get_json_data(get_path(path[k]), n1, n2)
         else:
             pt1, pt2 = get_leg_data(get_path(path[k]))
         line = dda_line_points(pt1, pt2)
+        output = torch.empty(size=(len(line), 2048))
         if len(line) > 0:
-            for j in range(0, 2048):
-                b = a[k][j]
-                s = 0
-                for i in range(len(line)):
-                    s += b[line[i][0], line[i][1]]
-                s /= len(line)
-                output.append(s)
-        outputs.append(output)
+            for i in range(len(line)):
+                output[i] = input[k, :, line[i][0], line[i][1]]
+            output = output.mean(0, False)
+        outputs[k] = output
 
-    outputs = torch.from_numpy(numpy.array(outputs)).float().cuda()
-    # print(outputs.shape)
-
-    return outputs
+    return outputs.cuda()
 
 
 # a = torch.randn(128, 2048, 16, 8)
@@ -116,3 +107,11 @@ def cal_feature(input, n1, n2, path, flag):
 
 
 
+# a = torch.randn(2, 5, 16, 8)
+# print(a)
+# t1 = [1, 3]
+# t2 = [2, 4]
+# b = a[0, :, t1[0], t1[1]]
+# c = a[0, :, t2[0], t2[1]]
+# d = torch.stack((b, c), 0)
+# d.mean(1, False)
