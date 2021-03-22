@@ -5,6 +5,7 @@ import json
 from PIL import Image
 import os.path as osp
 import os
+import math
 
 
 def get_json_data(path, h, w):
@@ -17,8 +18,8 @@ def get_json_data(path, h, w):
             pose = params['people'][0]['pose_keypoints_2d']
             # print("before", pose)
             for i in range(0, 25):
-                pose[3 * i] *= h
-                pose[3 * i + 1] *= w
+                pose[3 * i] *= w
+                pose[3 * i + 1] *= h
                 pose[3 * i] = round(pose[3 * i])
                 pose[3 * i + 1] = round(pose[3 * i + 1])
             # print("after", pose)
@@ -76,7 +77,20 @@ data_path = "/home/yhl/data/VC/"
 # resize_kp(8, 16, "gallery")
 # resize_kp(8, 16, "query")
 # os.remove("/home/yhl/data/VC/kp/train/0338-04-03-08_keypoints.json")
+os.remove("/home/yhl/data/VC/train/0338-04-03-08.jpg")
 
 # remove("train", 0.25)
 # remove("gallery", 0.25)
 # remove("query", 0.25)
+#
+# json_paths = glob.glob(osp.join(data_path, 'kp', "train", '*.json'))
+# for p in json_paths:
+#     flag = 1
+#     with open(p, 'rb') as f:
+#         params = json.load(f)
+#         for i in range(25):
+#             if params[3 * i] >= 8:
+#                 print(p)
+#                 break
+#     f.close()
+

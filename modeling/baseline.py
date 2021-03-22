@@ -277,8 +277,8 @@ class Part(nn.Module):
             self.base.load_param(model_path)
             print('Loading pretrained ImageNet model......')
 
-        self.gap = nn.AdaptiveAvgPool2d((256, 128))
-        # self.gap = nn.AdaptiveMaxPool2d(1)
+        # self.gap = nn.AdaptiveAvgPool2d((256, 128))
+        self.gap = nn.AdaptiveMaxPool2d(1)
         self.num_classes = num_classes
         self.neck = neck
         self.neck_feat = neck_feat
@@ -298,25 +298,38 @@ class Part(nn.Module):
     def forward(self, x, path):
 
         global_feat = self.base(x)
-        global_feat = nn.functional.interpolate(global_feat, scale_factor=16, mode='nearest')
-        feat1 = cal_feature(input, 1, 8, path)
+        # global_feat = nn.functional.interpolate(global_feat, scale_factor=16, mode='nearest')
+        feat1 = cal_feature(global_feat, 1, 8, path)
+        feat2 = cal_feature(global_feat, 2, 5, path)
+        global_feat = self.gap(global_feat)  # (b, 2048, 1, 1)
+        global_feat = global_feat.view(global_feat.shape[0], -1)  # flatten to (bs, 2048)
+
+        # feat3 = cal_feature(global_feat, 8, 10, path)
+        # feat4 = cal_feature(global_feat, 8, 13, path)
+        # feat5 = cal_feature(global_feat, 1, 8, path)
 
 
         if self.neck == 'no':
             feat1 = global_feat
         elif self.neck == 'bnneck':
             feat1 = self.bottleneck(feat1)  # normalize for angular softmax
+            feat2 = self.bottleneck(feat2)
+            feat = self.bottleneck(global_feat)
 
         if self.training:
-            cls_score = self.classifier(feat1)
-            return cls_score, feat1  # global feature for triplet loss
+            cls_score1 = self.classifier(feat1)
+            cls_score2 = self.classifier(feat2)
+            cls_score = self.classifier(feat)
+            score = [cls_score1, cls_score2, cls_score]
+            feats = [feat1, feat2, feat]
+            return score, feats  # global feature for triplet loss
         else:
             if self.neck_feat == 'after':
                 # print("Test with feature after BN")
-                return feat1
+                return feat
             else:
                 # print("Test with feature before BN")
-                return feat1
+                return global_feat
 
     def load_param(self, trained_path):
         param_dict = torch.load(trained_path)

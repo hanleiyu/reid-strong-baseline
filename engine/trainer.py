@@ -69,21 +69,23 @@ def part_trainer(model, optimizer, loss_fn, device=None):
         img = img.to(device) if torch.cuda.device_count() >= 1 else img
         target = target.to(device) if torch.cuda.device_count() >= 1 else target
         score, feat = model(img, path)
-        loss = loss_fn(score, feat, target)
-        loss.backward()
-        optimizer.step()
-        # loss_part = []
-        # ten = []
-        # for i in range(0, 10):
-        #     loss_part[i] = loss_fn(score[i], feat[i], target)
-        #     ten.append(torch.tensor(1.0).cuda())
-        # torch.autograd.backward(loss_part, ten)
+        # loss = loss_fn(score, feat, target)
+        # loss.backward()
         # optimizer.step()
+        loss_part = [0, 0, 0]
+        ten = []
+        for i in range(0, 3):
+            loss_part[i] = loss_fn(score[i], feat[i], target)
+            ten.append(torch.tensor(1.0).cuda())
+        torch.autograd.backward(loss_part, ten)
+        optimizer.step()
         # loss = mean(loss_part)
 
         # compute acc
-        acc = (score.max(1)[1] == target).float().mean()
-        return loss.item(), acc.item()
+        acc1 = (score[0].max(1)[1] == target).float().mean()
+        acc2 = (score[1].max(1)[1] == target).float().mean()
+        acc = (score[2].max(1)[1] == target).float().mean()
+        return loss_part, acc.item(), acc1.item(), acc2.item()
 
     return Engine(_update)
 
@@ -186,9 +188,9 @@ def part_evaluator(model, metrics, device=None):
     def _inference(engine, batch):
         model.eval()
         with torch.no_grad():
-            data, pids, camids, _ = batch
+            data, pids, camids, path = batch
             data = data.to(device) if torch.cuda.device_count() >= 1 else data
-            feat = model(data)
+            feat = model(data, path)
             return feat, pids, camids
 
     engine = Engine(_inference)
@@ -225,7 +227,7 @@ def do_train(
             'r1_mAP': R1_mAP(num_query, max_rank=50, feat_norm=cfg.TEST.FEAT_NORM)}, device=device)
     elif cfg.MODEL.CHANGE == 'part':
         trainer = part_trainer(model, optimizer, loss_fn, device=device)
-        evaluator = create_supervised_evaluator(model, metrics={
+        evaluator = part_evaluator(model, metrics={
             'r1_mAP': R1_mAP(num_query, max_rank=50, feat_norm=cfg.TEST.FEAT_NORM)}, device=device)
 
     checkpointer = ModelCheckpoint(output_dir, cfg.MODEL.NAME, checkpoint_period, n_saved=10, require_empty=False)
@@ -236,8 +238,12 @@ def do_train(
                  pause=Events.ITERATION_COMPLETED, step=Events.ITERATION_COMPLETED)
 
     # average metric to attach on trainer
-    RunningAverage(output_transform=lambda x: x[0]).attach(trainer, 'avg_loss')
-    RunningAverage(output_transform=lambda x: x[1]).attach(trainer, 'avg_acc')
+    RunningAverage(output_transform=lambda x: x[0][0]).attach(trainer, 'avg_loss1')
+    RunningAverage(output_transform=lambda x: x[0][1]).attach(trainer, 'avg_loss2')
+    RunningAverage(output_transform=lambda x: x[0][2]).attach(trainer, 'avg_loss')
+    RunningAverage(output_transform=lambda x: x[1]).attach(trainer, 'avg_acc1')
+    RunningAverage(output_transform=lambda x: x[2]).attach(trainer, 'avg_acc2')
+    RunningAverage(output_transform=lambda x: x[3]).attach(trainer, 'avg_acc')
 
     @trainer.on(Events.STARTED)
     def start_training(engine):
@@ -253,9 +259,11 @@ def do_train(
         ITER += 1
 
         if ITER % log_period == 0:
-            logger.info("Epoch[{}] Iteration[{}/{}] Loss: {:.3f}, Acc: {:.3f}, Base Lr: {:.2e}"
+            logger.info("Epoch[{}] Iteration[{}/{}] Loss: {:.3f}, Loss1: {:.3f}, Loss2: {:.3f},"
+                        "Acc: {:.3f}, Acc1: {:.3f}, Acc2: {:.3f},Base Lr: {:.2e}"
                         .format(engine.state.epoch, ITER, len(train_loader),
-                                engine.state.metrics['avg_loss'], engine.state.metrics['avg_acc'],
+                                engine.state.metrics['avg_loss'], engine.state.metrics['avg_loss1'], engine.state.metrics['avg_loss2'],
+                                engine.state.metrics['avg_acc'], engine.state.metrics['avg_acc1'], engine.state.metrics['avg_acc2'],
                                 scheduler.get_lr()[0]))
         if len(train_loader) == ITER:
             ITER = 0
