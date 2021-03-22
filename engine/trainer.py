@@ -236,6 +236,101 @@ def do_train(
                  pause=Events.ITERATION_COMPLETED, step=Events.ITERATION_COMPLETED)
 
     # average metric to attach on trainer
+    RunningAverage(output_transform=lambda x: x[0]).attach(trainer, 'avg_loss')
+    RunningAverage(output_transform=lambda x: x[1]).attach(trainer, 'avg_acc')
+
+    @trainer.on(Events.STARTED)
+    def start_training(engine):
+        engine.state.epoch = start_epoch
+
+    @trainer.on(Events.EPOCH_STARTED)
+    def adjust_learning_rate(engine):
+        scheduler.step()
+
+    @trainer.on(Events.ITERATION_COMPLETED)
+    def log_training_loss(engine):
+        global ITER
+        ITER += 1
+        if ITER % log_period == 0:
+            logger.info("Epoch[{}] Iteration[{}/{}] Loss: {:.3f}, "
+                        "Acc: {:.3f}, Base Lr: {:.2e}"
+                        .format(engine.state.epoch, ITER, len(train_loader),
+                                 engine.state.metrics['avg_loss'],
+                                 engine.state.metrics['avg_acc'],
+                                scheduler.get_lr()[0]))
+        # if ITER % log_period == 0:
+        #     logger.info("Epoch[{}] Iteration[{}/{}] Loss: {:.3f}, Loss1: {:.3f}, Loss2: {:.3f}, Loss3: {:.3f}, Loss4: {:.3f}, Loss5: {:.3f},"
+        #                 "Acc: {:.3f}, Acc1: {:.3f}, Acc2: {:.3f}, Acc3: {:.3f}, Acc4: {:.3f},  Acc5: {:.3f}Base Lr: {:.2e}"
+        #                 .format(engine.state.epoch, ITER, len(train_loader),
+        #                         engine.state.metrics['avg_loss'], engine.state.metrics['avg_loss1'],
+        #                         engine.state.metrics['avg_loss2'], engine.state.metrics['avg_loss3'],
+        #                         engine.state.metrics['avg_loss4'], engine.state.metrics['avg_loss5'],
+        #                         engine.state.metrics['avg_acc'], engine.state.metrics['avg_acc1'],
+        #                         engine.state.metrics['avg_acc2'], engine.state.metrics['avg_acc3'],
+        #                         engine.state.metrics['avg_acc4'], engine.state.metrics['avg_acc5'],
+        #                         scheduler.get_lr()[0]))
+        if len(train_loader) == ITER:
+            ITER = 0
+
+    # adding handlers using `trainer.on` decorator API
+    @trainer.on(Events.EPOCH_COMPLETED)
+    def print_times(engine):
+        logger.info('Epoch {} done. Time per batch: {:.3f}[s] Speed: {:.1f}[samples/s]'
+                    .format(engine.state.epoch, timer.value() * timer.step_count,
+                            train_loader.batch_size / timer.value()))
+        logger.info('-' * 10)
+        timer.reset()
+
+    @trainer.on(Events.EPOCH_COMPLETED)
+    def log_validation_results(engine):
+        if engine.state.epoch % eval_period == 0:
+            evaluator.run(val_loader)
+            cmc, mAP = evaluator.state.metrics['r1_mAP']
+            logger.info("Validation Results - Epoch: {}".format(engine.state.epoch))
+            logger.info("mAP: {:.1%}".format(mAP))
+            for r in [1, 5, 10]:
+                logger.info("CMC curve, Rank-{:<3}:{:.1%}".format(r, cmc[r - 1]))
+
+    trainer.run(train_loader, max_epochs=epochs)
+
+
+def do_train_part(
+        cfg,
+        model,
+        train_loader,
+        val_loader,
+        optimizer,
+        scheduler,
+        loss_fn,
+        num_query,
+        start_epoch
+):
+    log_period = cfg.SOLVER.LOG_PERIOD
+    checkpoint_period = cfg.SOLVER.CHECKPOINT_PERIOD
+    eval_period = cfg.SOLVER.EVAL_PERIOD
+    output_dir = cfg.OUTPUT_DIR
+    device = cfg.MODEL.DEVICE
+    epochs = cfg.SOLVER.MAX_EPOCHS
+
+    logger = logging.getLogger("reid_baseline.train")
+    logger.info("Start training")
+    if cfg.MODEL.CHANGE == 'strong':
+        trainer = create_supervised_trainer(model, optimizer, loss_fn, device=device)
+        evaluator = create_supervised_evaluator(model, metrics={
+            'r1_mAP': R1_mAP(num_query, max_rank=50, feat_norm=cfg.TEST.FEAT_NORM)}, device=device)
+    elif cfg.MODEL.CHANGE == 'part':
+        trainer = part_trainer(model, optimizer, loss_fn, device=device)
+        evaluator = part_evaluator(model, metrics={
+            'r1_mAP': R1_mAP(num_query, max_rank=50, feat_norm=cfg.TEST.FEAT_NORM)}, device=device)
+
+    checkpointer = ModelCheckpoint(output_dir, cfg.MODEL.NAME, checkpoint_period, n_saved=10, require_empty=False)
+    timer = Timer(average=True)
+
+    trainer.add_event_handler(Events.EPOCH_COMPLETED, checkpointer, {'model': model, 'optimizer': optimizer})
+    timer.attach(trainer, start=Events.EPOCH_STARTED, resume=Events.ITERATION_STARTED,
+                 pause=Events.ITERATION_COMPLETED, step=Events.ITERATION_COMPLETED)
+
+    # average metric to attach on trainer
     RunningAverage(output_transform=lambda x: x[0][0]).attach(trainer, 'avg_loss1')
     RunningAverage(output_transform=lambda x: x[0][1]).attach(trainer, 'avg_loss2')
     RunningAverage(output_transform=lambda x: x[0][2]).attach(trainer, 'avg_loss3')
@@ -306,7 +401,6 @@ def do_train(
                 logger.info("CMC curve, Rank-{:<3}:{:.1%}".format(r, cmc[r - 1]))
 
     trainer.run(train_loader, max_epochs=epochs)
-
 
 def do_train_with_center(
         cfg,
