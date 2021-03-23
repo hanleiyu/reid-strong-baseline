@@ -154,7 +154,6 @@ def cal_mask(p, a, b):
     pt1, pt2 = get_json_data(p, a, b)
     line = dda_line_points(pt1, pt2)
     a = torch.zeros(size=(16, 8))
-    a = a.byte()
     for i in range(len(line)):
         if line[i][0] <= 7 and line[i][1] <= 15 :
             a[line[i][0]][line[i][1]] = 1
@@ -250,3 +249,13 @@ data_path = "/home/yhl/data/VC/"
 # path = ["", ""]
 # feature = cal_feature(input, 1, 2, path)
 
+
+json_paths = glob.glob(osp.join(data_path, 'kp', "query", '*.json'))
+num = [0 for _ in range(25)]
+for p in json_paths:
+    with open(p, 'rb') as f:
+        params = json.load(f)
+        for i in range(25):
+            if params[3 * i + 2] == 0:
+                num[i] += 1
+print(num)
