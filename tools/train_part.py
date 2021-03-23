@@ -15,7 +15,7 @@ sys.path.append('.')
 from config import cfg
 from data import make_data_loader
 from engine.trainer import do_train_part
-from modeling import build_model
+from modeling import build_part_model
 from layers import make_loss
 from solver import make_optimizer, WarmupMultiStepLR
 
@@ -27,7 +27,7 @@ def train(cfg):
     train_loader, val_loader, num_query, num_classes = make_data_loader(cfg)
 
     # prepare model
-    model = build_model(cfg, num_classes)
+    model = build_part_model(cfg, num_classes)
 
     print('Train without center loss, the loss type is', cfg.MODEL.METRIC_LOSS_TYPE)
     optimizer = make_optimizer(cfg, model)

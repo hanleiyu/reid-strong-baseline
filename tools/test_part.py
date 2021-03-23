@@ -16,7 +16,7 @@ sys.path.append('.')
 from config import cfg
 from data import make_data_loader
 from engine.inference import part_inference
-from modeling import build_model
+from modeling import build_part_model
 from utils.logger import setup_logger
 
 
@@ -57,7 +57,7 @@ def main():
     cudnn.benchmark = True
 
     train_loader, val_loader, num_query, num_classes = make_data_loader(cfg)
-    model = build_model(cfg, num_classes)
+    model = build_part_model(cfg, num_classes)
     model.load_param(cfg.TEST.WEIGHT)
 
     part_inference(cfg, model, val_loader, num_query)

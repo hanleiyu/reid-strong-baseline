@@ -56,6 +56,6 @@ TEST:
   IMS_PER_BATCH: 128
   RE_RANKING: 'no'
   WEIGHT: "path"
-  NECK_FEAT: 'after'
-  FEAT_NORM: 'yes'
+  NECK_FEAT: 'before'
+  FEAT_NORM: 'no'
 
