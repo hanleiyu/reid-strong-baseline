@@ -2,7 +2,7 @@
 
 import glob
 import numpy as np
-
+import torch
 import os.path as osp
 
 from .bases import BaseImageDataset
@@ -58,8 +58,8 @@ class VC(BaseImageDataset):
             raise RuntimeError("'{}' is not available".format(self.gallery_dir))
 
     def _process_dir(self, dir_path, relabel=False):
-        kps1 = np.load('/home/yhl/data/VC/kp1.npy').item()
-        kps2 = np.load('/home/yhl/data/VC/kp2.npy').item()
+        kps1 = torch.load('/home/yhl/data/VC/mask1.pt')
+        kps2 = torch.load('/home/yhl/data/VC/mask2.pt')
 
         img_paths = glob.glob(osp.join(dir_path, '*.jpg'))
         # pattern = re.compile(r'([-\d]+)_c(\d)')

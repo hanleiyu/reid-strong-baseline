@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 
 from .collate_batch import part_train_collate_fn, part_val_collate_fn, train_collate_fn, val_collate_fn
 from .datasets import init_dataset, ImageDataset, ImageDatasetPart
-from .samplers import RandomIdentitySampler, RandomIdentitySampler_alignedreid  # New add by gu
+from .samplers import RandomIdentitySampler, RandomIdentitySampler_Part
 from .transforms import build_transforms
 
 
@@ -72,7 +72,7 @@ def make_data_loader_part(cfg):
     else:
         train_loader = DataLoader(
             train_set, batch_size=cfg.SOLVER.IMS_PER_BATCH,
-            sampler=RandomIdentitySampler(dataset.train, cfg.SOLVER.IMS_PER_BATCH, cfg.DATALOADER.NUM_INSTANCE),
+            sampler=RandomIdentitySampler_Part(dataset.train, cfg.SOLVER.IMS_PER_BATCH, cfg.DATALOADER.NUM_INSTANCE),
             # sampler=RandomIdentitySampler_alignedreid(dataset.train, cfg.DATALOADER.NUM_INSTANCE),      # new add by gu
             num_workers=num_workers, collate_fn=part_train_collate_fn
         )

@@ -10,17 +10,6 @@ import numpy as np
 import torch
 
 
-def get_path(p):
-    path = ""
-    if p.find('train') != -1:
-        path = osp.join("/home/yhl/data/VC/kp/train", p[-17:-4] + '_keypoints.json')
-    elif p.find('gallery') != -1:
-        path = osp.join("/home/yhl/data/VC/kp/gallery", p[-17:-4] + '_keypoints.json')
-    elif p.find('query') != -1:
-        path = osp.join("/home/yhl/data/VC/kp/query", p[-17:-4] + '_keypoints.json')
-    return path
-
-
 def get_json_data(path, n1, n2):
     t1 = []
     t2 = []
@@ -74,8 +63,8 @@ def dda_line_points(pt1, pt2):
             y = y1
 
         for k in range(steps + 1):
-            if math.floor(x + 0.5) <= 7 and math.floor(y + 0.5) <= 15:
-                line.append([math.floor(x + 0.5), math.floor(y + 0.5)])
+            if math.floor(x + 0.5) <= 8 and math.floor(y + 0.5) <= 16:
+                line.append([math.floor(x + 0.5)-1, math.floor(y + 0.5)-1])
                 x += xinc
                 y += yinc
 
@@ -161,41 +150,58 @@ def remove(name, threshold):
     print(num)
 
 
-def cal_kp(name):
+def cal_mask(p, a, b):
+    pt1, pt2 = get_json_data(p, a, b)
+    line = dda_line_points(pt1, pt2)
+    a = torch.zeros(size=(16, 8))
+    a = a.byte()
+    for i in range(len(line)):
+        if line[i][0] <= 7 and line[i][1] <= 15 :
+            a[line[i][0]][line[i][1]] = 1
+        else:
+            print(p)
+    mask = a.view(1, 16, 8).repeat(2048, 1, 1)
+    return mask
+
+def cal_kp(a, b):
     dictionary = {}
-    json_paths = glob.glob(osp.join(data_path, 'kp', name, '*.json'))
+    json_paths = glob.glob(osp.join(data_path, 'kp', "train", '*.json'))
     for p in json_paths:
         img = p[-28:-15]
-        pt1, pt2 = get_json_data(p, 1, 8)
-        line = dda_line_points(pt1, pt2)
-        dictionary.update({img_path: {"upper body": line}})
-        pt1, pt2 = get_json_data(p, 2, 5)
-        line = dda_line_points(pt1, pt2)
-        dictionary[img_path].update({"shoulder": line})
-        pt1, pt2 = get_json_data(p, 8, 10)
-        line = dda_line_points(pt1, pt2)
-        dictionary[img_path].update({"left thigh": line})
-        pt1, pt2 = get_json_data(p, 8, 13)
-        line = dda_line_points(pt1, pt2)
-        dictionary[img_path].update({"right thigh": line})
-        pt1, pt2 = get_leg_data(p)
-        line = dda_line_points(pt1, pt2)
-        dictionary[img_path].update({"lower leg": line})
+        dictionary.update({img: cal_mask(p, a, b)})
+    json_paths = glob.glob(osp.join(data_path, 'kp', "gallery", '*.json'))
+    for p in json_paths:
+        img = p[-28:-15]
+        dictionary.update({img: cal_mask(p, a, b)})
+    json_paths = glob.glob(osp.join(data_path, 'kp', "query", '*.json'))
+    for p in json_paths:
+        img = p[-28:-15]
+        dictionary.update({img: cal_mask(p, a, b)})
     return dictionary
 
 
 def save_kp():
-    train_dic = cal_kp("train")
-    gallery_dic = cal_kp("gallery")
-    query_dic = cal_kp("query")
-    gallery_dic.update(query_dic)
-    np.save('train.npy', train_dic)
-    np.save('val.npy', gallery_dic)
+    mask1 = cal_kp(1, 8)
+    mask2 = cal_kp(2, 5)
+    # mask3 = cal_kp(8, 10)
+    # mask4 = cal_kp(8, 13)
+    # pt1, pt2 = get_leg_data(p)
+    torch.save(mask1, 'mask1.pt')
+    torch.save(mask2, 'mask2.pt')
 
 
 data_path = "/home/yhl/data/VC/"
 # save_kp()
-
+# a = torch.randn(4,4)
+# b = torch.randn(4,4)
+# d = {"1":a}
+# d.update({"2":b})
+# torch.save(d, 'a.pt')
+#
+# b = torch.load("a.pt")
+# print(b["1"])
+# b = torch.load("a.pt", map_location=torch.device('cuda'))
+# print(b["1"])
 # resize_kp(8, 16, "train")
 # resize_kp(8, 16, "gallery")
 # resize_kp(8, 16, "query")
@@ -205,8 +211,6 @@ data_path = "/home/yhl/data/VC/"
 # remove("train", 0.25)
 # remove("gallery", 0.25)
 # remove("query", 0.25)
-
-
 
 # json_paths = glob.glob(osp.join(data_path, 'kp', "train", '*.json'))
 # for p in json_paths:
@@ -231,12 +235,10 @@ data_path = "/home/yhl/data/VC/"
 # dictionary.update(b)
 # dictionary['1'].update({'hello': 'a'})
 # np.save('my_file.npy', dictionary)
-#
+
 # # Load
 # read_dictionary = np.load('train.npy').item()
 # print(read_dictionary)
-
-
 
 
 # a = torch.randn(128, 2048, 16, 8)
@@ -247,11 +249,4 @@ data_path = "/home/yhl/data/VC/"
 # print(m.shape)
 # path = ["", ""]
 # feature = cal_feature(input, 1, 2, path)
-
-
-a = torch.randn(2, 2)
-d = a
-for i in range(3):
-    d = torch.stack((d, a), 0)
-# d.mean(1, False)
 

@@ -65,7 +65,7 @@ def part_trainer(model, optimizer, loss_fn, device=None):
     def _update(engine, batch):
         model.train()
         optimizer.zero_grad()
-        img, target, _, mask1, mask2 = batch
+        img, target, mask1, mask2 = batch
         img = img.to(device) if torch.cuda.device_count() >= 1 else img
         target = target.to(device) if torch.cuda.device_count() >= 1 else target
         score, feat = model(img, mask1, mask2)
@@ -186,7 +186,7 @@ def part_evaluator(model, metrics, device=None):
     def _inference(engine, batch):
         model.eval()
         with torch.no_grad():
-            data, pids, camids, _, _, _, = batch
+            data, pids, camids = batch
             data = data.to(device) if torch.cuda.device_count() >= 1 else data
             feat = model(data, "", "")
             return feat, pids, camids
@@ -390,6 +390,7 @@ def do_train_part(
             for r in [1, 5, 10]:
                 logger.info("CMC curve, Rank-{:<3}:{:.1%}".format(r, cmc[r - 1]))
 
+    torch.multiprocessing.set_sharing_strategy('file_system')
     trainer.run(train_loader, max_epochs=epochs)
 
 def do_train_with_center(
