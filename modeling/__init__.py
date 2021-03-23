@@ -5,7 +5,6 @@
 """
 
 from .baseline import Baseline, Part
-from .demo import *
 
 
 def build_model(cfg, num_classes):

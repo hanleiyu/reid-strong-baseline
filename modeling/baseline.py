@@ -10,8 +10,8 @@ from torch import nn
 from .backbones.resnet import ResNet, BasicBlock, Bottleneck
 from .backbones.senet import SENet, SEResNetBottleneck, SEBottleneck, SEResNeXtBottleneck
 from .backbones.resnet_ibn_a import resnet50_ibn_a
-from .demo import *
-
+from .process_kp import cal_feature
+import numpy as np
 
 def weights_init_kaiming(m):
     classname = m.__class__.__name__
@@ -295,12 +295,15 @@ class Part(nn.Module):
             self.bottleneck.apply(weights_init_kaiming)
             self.classifier.apply(weights_init_classifier)
 
+        self.kpt = np.load('/home/yhl/data/VC/train.npy').item()
+        self.kpv = np.load('/home/yhl/data/VC/val.npy').item()
+
     def forward(self, x, path):
         if self.training:
             global_feat = self.base(x)
             # global_feat = nn.functional.interpolate(global_feat, scale_factor=16, mode='nearest')
-            feat1 = cal_feature(global_feat, 1, 8, path, 1)
-            feat2 = cal_feature(global_feat, 2, 5, path, 1)
+            feat1 = cal_feature(global_feat, "upper body", path, self.kpt)
+            feat2 = cal_feature(global_feat, "shoulder", path, self.kpt)
             # feat3 = cal_feature(global_feat, 8, 10, path, 1)
             # feat4 = cal_feature(global_feat, 8, 13, path, 1)
             # feat5 = cal_feature(global_feat, 0, 0, path, 0)
