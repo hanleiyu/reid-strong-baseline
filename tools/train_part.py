@@ -13,7 +13,7 @@ from torch.backends import cudnn
 
 sys.path.append('.')
 from config import cfg
-from data import make_data_loader
+from data import make_data_loader_part
 from engine.trainer import do_train_part
 from modeling import build_part_model
 from layers import make_loss
@@ -24,7 +24,7 @@ from utils.logger import setup_logger
 
 def train(cfg):
     # prepare dataset
-    train_loader, val_loader, num_query, num_classes = make_data_loader(cfg)
+    train_loader, val_loader, num_query, num_classes = make_data_loader_part(cfg)
 
     # prepare model
     model = build_part_model(cfg, num_classes)

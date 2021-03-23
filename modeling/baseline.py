@@ -295,15 +295,13 @@ class Part(nn.Module):
             self.bottleneck.apply(weights_init_kaiming)
             self.classifier.apply(weights_init_classifier)
 
-        self.kpt = np.load('/home/yhl/data/VC/train.npy').item()
-        self.kpv = np.load('/home/yhl/data/VC/val.npy').item()
 
-    def forward(self, x, path):
+    def forward(self, x, mask1, mask2):
         if self.training:
             global_feat = self.base(x)
             # global_feat = nn.functional.interpolate(global_feat, scale_factor=16, mode='nearest')
-            feat1 = cal_feature(global_feat, "upper body", path, self.kpt)
-            feat2 = cal_feature(global_feat, "shoulder", path, self.kpt)
+            feat1 = torch.masked_select(global_feat, mask1)
+            feat2 = torch.masked_select(global_feat, mask2)
             # feat3 = cal_feature(global_feat, 8, 10, path, 1)
             # feat4 = cal_feature(global_feat, 8, 13, path, 1)
             # feat5 = cal_feature(global_feat, 0, 0, path, 0)

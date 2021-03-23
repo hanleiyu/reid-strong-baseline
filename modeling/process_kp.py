@@ -165,7 +165,7 @@ def cal_kp(name):
     dictionary = {}
     json_paths = glob.glob(osp.join(data_path, 'kp', name, '*.json'))
     for p in json_paths:
-        img_path = osp.join(data_path, name, p[-28:-15] + '.jpg')
+        img = p[-28:-15]
         pt1, pt2 = get_json_data(p, 1, 8)
         line = dda_line_points(pt1, pt2)
         dictionary.update({img_path: {"upper body": line}})

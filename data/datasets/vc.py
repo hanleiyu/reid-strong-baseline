@@ -1,7 +1,7 @@
 # encoding: utf-8
 
 import glob
-import re
+import numpy as np
 
 import os.path as osp
 
@@ -58,6 +58,9 @@ class VC(BaseImageDataset):
             raise RuntimeError("'{}' is not available".format(self.gallery_dir))
 
     def _process_dir(self, dir_path, relabel=False):
+        kps1 = np.load('/home/yhl/data/VC/kp1.npy').item()
+        kps2 = np.load('/home/yhl/data/VC/kp2.npy').item()
+
         img_paths = glob.glob(osp.join(dir_path, '*.jpg'))
         # pattern = re.compile(r'([-\d]+)_c(\d)')
 
@@ -72,11 +75,13 @@ class VC(BaseImageDataset):
         for img_path in img_paths:
             pid = int(img_path[-17:-13])
             camid = int(img_path[-11])
+            mask1 = kps1[img_path[-17:-4]]
+            mask2 = kps2[img_path[-17:-4]]
             if pid == -1: continue  # junk images are just ignored
             assert 0 <= pid <= 1501  # pid == 0 means background
             assert 1 <= camid <= 6
             camid -= 1  # index starts from 0
             if relabel: pid = pid2label[pid]
-            dataset.append((img_path, pid, camid))
+            dataset.append((img_path, pid, camid, mask1, mask2))
 
         return dataset
