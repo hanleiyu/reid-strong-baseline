@@ -16,8 +16,8 @@ def get_json_data(path, n1, n2):
     with open(path, 'rb') as f:
         params = json.load(f)
         if len(params) > 0:
-            t1 = [params[3 * n1 + 1], params[3 * n1]]
-            t2 = [params[3 * n2 + 1], params[3 * n2]]
+            t1 = [params[3 * n1], params[3 * n1 + 1]]
+            t2 = [params[3 * n2], params[3 * n2 + 1]]
     f.close()
 
     return t1, t2
@@ -26,18 +26,20 @@ def get_json_data(path, n1, n2):
 def get_leg_data(path):
     t1 = []
     t2 = []
+    t3 = []
+    t4 = []
     with open(path, 'rb') as f:
         params = json.load(f)
         if len(params) > 0:
-            num = 10
-            if params[3 * 10 + 2] <= 0.25 or params[3 * 11 + 2] <= 0.25 \
-                    or (params[3 * 13 + 2] + params[3 * 14 + 2]) > (params[3 * 10 + 2] + params[3 * 11 + 2]):
-                num = 13
-            t1 = [params[3 * num + 1], params[3 * num]]
-            t2 = [params[3 * (num + 1) + 1], params[3 * (num + 1)]]
+            if params[3 * 10 + 2] != 0 and params[3 * 11 + 2] != 0:
+                t1 = [params[3 * 10], params[3 * 10 + 1]]
+                t2 = [params[3 * 11], params[3 * 11 + 1]]
+            if params[3 * 13 + 2] != 0 and params[3 * 14 + 2] != 0:
+                t3 = [params[3 * 13], params[3 * 13 + 1]]
+                t4 = [params[3 * 14], params[3 * 14 + 1]]
     f.close()
 
-    return t1, t2
+    return t1, t2, t3, t4
 
 
 def dda_line_points(pt1, pt2):
@@ -63,29 +65,11 @@ def dda_line_points(pt1, pt2):
             y = y1
 
         for k in range(steps + 1):
-            if math.floor(x + 0.5) <= 8 and math.floor(y + 0.5) <= 16:
-                line.append([math.floor(x + 0.5)-1, math.floor(y + 0.5)-1])
+                line.append([math.floor(x + 0.5), math.floor(y + 0.5)])
                 x += xinc
                 y += yinc
 
     return line
-
-
-def cal_feature(input, index, path, kp):
-    outputs = torch.empty(size=(128, 2048))
-    for k in range(128):
-        line = kp[path[k]][index]
-        output = torch.empty(size=(len(line), 2048))
-        if len(line) > 0:
-            for i in range(len(line)):
-                if line[i][0] > 7 or line[i][1]> 15:
-                    print(line[i])
-                else:
-                    output[i] = input[k, :, line[i][0], line[i][1]]
-        output = output.mean(0, False)
-        outputs[k] = output
-
-    return outputs.cuda()
 
 
 def resize_json_data(path, h, w):
@@ -151,12 +135,17 @@ def remove(name, threshold):
 
 
 def cal_mask(p, a, b):
-    pt1, pt2 = get_json_data(p, a, b)
-    line = dda_line_points(pt1, pt2)
+    if a == 0 :
+        pt1, pt2, pt3, pt4 = get_leg_data(p)
+        line = dda_line_points(pt1, pt2) + dda_line_points(pt3, pt4)
+    else:
+        pt1, pt2 = get_json_data(p, a, b)
+        line = dda_line_points(pt1, pt2)
+
     a = torch.zeros(size=(16, 8))
     for i in range(len(line)):
         if line[i][0] <= 7 and line[i][1] <= 15 :
-            a[line[i][0]][line[i][1]] = 1
+            a[line[i][1]][line[i][0]] = 1
         else:
             print(p)
     mask = a.view(1, 16, 8).repeat(2048, 1, 1)
@@ -180,13 +169,17 @@ def cal_kp(a, b):
 
 
 def save_kp():
-    mask1 = cal_kp(1, 8)
-    mask2 = cal_kp(2, 5)
+    # mask1 = cal_kp(1, 8)
+    # mask2 = cal_kp(2, 5)
     # mask3 = cal_kp(8, 10)
     # mask4 = cal_kp(8, 13)
+    mask5 = cal_kp(0, 0)
     # pt1, pt2 = get_leg_data(p)
-    torch.save(mask1, 'mask1.pt')
-    torch.save(mask2, 'mask2.pt')
+    # torch.save(mask1, 'mask1.pt')
+    # torch.save(mask2, 'mask2.pt')
+    # torch.save(mask3, 'mask3.pt')
+    # torch.save(mask4, 'mask4.pt')
+    torch.save(mask5, 'mask5.pt')
 
 
 data_path = "/home/yhl/data/VC/"
@@ -206,7 +199,7 @@ data_path = "/home/yhl/data/VC/"
 # resize_kp(8, 16, "query")
 # os.remove("/home/yhl/data/VC/kp/train/0338-04-03-08_keypoints.json")
 # os.remove("/home/yhl/data/VC/train/0338-04-03-08.jpg")
-#
+
 # remove("train", 0.25)
 # remove("gallery", 0.25)
 # remove("query", 0.25)
@@ -222,8 +215,9 @@ data_path = "/home/yhl/data/VC/"
 #                 break
 #     f.close()
 
-# img = Image.open("/home/yhl/data/VC/train/0286-01-02-08.jpg")
+# img = Image.open("/home/yhl/data/VC/query/0065-02-01-01.jpg")
 # print(img.size)
+# cal_mask("/home/yhl/data/VC/kp/query/0065-02-01-01_keypoints.json", 0, 0)
 
 # # Save
 # path = ['1', '2', '3', '4']
@@ -250,12 +244,16 @@ data_path = "/home/yhl/data/VC/"
 # feature = cal_feature(input, 1, 2, path)
 
 
-json_paths = glob.glob(osp.join(data_path, 'kp', "query", '*.json'))
-num = [0 for _ in range(25)]
-for p in json_paths:
-    with open(p, 'rb') as f:
-        params = json.load(f)
-        for i in range(25):
-            if params[3 * i + 2] == 0:
-                num[i] += 1
-print(num)
+# json_paths = glob.glob(osp.join(data_path, 'kp', "query", '*.json'))
+# num = [0 for _ in range(25)]
+# for p in json_paths:
+#     with open(p, 'rb') as f:
+#         params = json.load(f)
+#         for i in range(25):
+#             if params[3 * i + 2] == 0:
+#                 num[i] += 1
+# print(num)
+
+# json_paths = glob.glob(osp.join(data_path,  "train", '*.json'))
+# for p in json_paths:
+#     os.remove(p)
