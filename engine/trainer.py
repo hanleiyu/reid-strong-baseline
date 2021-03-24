@@ -65,10 +65,10 @@ def part_trainer(model, optimizer, loss_fn, device=None):
     def _update(engine, batch):
         model.train()
         optimizer.zero_grad()
-        img, target, mask1, mask2, mask3, mask4, mask5 = batch
+        img, target, mask1, mask2, mask3, mask4, mask5, mask6 = batch
         img = img.to(device) if torch.cuda.device_count() >= 1 else img
         target = target.to(device) if torch.cuda.device_count() >= 1 else target
-        score, feat = model(img, mask1, mask2, mask3, mask4, mask5)
+        score, feat = model(img, mask1, mask2, mask3, mask4, mask5, mask6)
         # loss = loss_fn(score, feat, target)
         # loss.backward()
         # optimizer.step()
@@ -188,7 +188,7 @@ def part_evaluator(model, metrics, device=None):
         with torch.no_grad():
             data, pids, camids = batch
             data = data.to(device) if torch.cuda.device_count() >= 1 else data
-            feat = model(data, "", "", "", "", "")
+            feat = model(data, "", "", "", "", "", "")
             return feat, pids, camids
 
     engine = Engine(_inference)
