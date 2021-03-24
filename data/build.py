@@ -53,15 +53,10 @@ def make_data_loader_part(cfg):
     train_transforms = build_transforms(cfg, is_train=True)
     val_transforms = build_transforms(cfg, is_train=False)
     num_workers = cfg.DATALOADER.NUM_WORKERS
-    if len(cfg.DATASETS.NAMES) == 1:
-        dataset = init_dataset(cfg.DATASETS.NAMES, root=cfg.DATASETS.ROOT_DIR)
 
-    else:
-        # TODO: add multi dataset to train
-        dataset = init_dataset(cfg.DATASETS.NAMES, root=cfg.DATASETS.ROOT_DIR)
+    dataset = init_dataset(cfg.DATASETS.NAMES, root=cfg.DATASETS.ROOT_DIR)
 
     num_classes = dataset.num_train_pids
-
     train_set = ImageDatasetPart(dataset.train, train_transforms)
 
     if cfg.DATALOADER.SAMPLER == 'softmax':
@@ -84,3 +79,4 @@ def make_data_loader_part(cfg):
         collate_fn=part_val_collate_fn
     )
     return train_loader, val_loader, len(dataset.query), num_classes
+

@@ -14,7 +14,7 @@ class BaseDataset(object):
 
     def get_imagedata_info(self, data):
         pids, cams = [], []
-        for _, pid, camid, _, _ in data:
+        for _, pid, camid, _, _, _, _, _, in data:
             pids += [pid]
             cams += [camid]
         pids = set(pids)

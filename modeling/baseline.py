@@ -10,7 +10,6 @@ from torch import nn
 from .backbones.resnet import ResNet, BasicBlock, Bottleneck
 from .backbones.senet import SENet, SEResNetBottleneck, SEBottleneck, SEResNeXtBottleneck
 from .backbones.resnet_ibn_a import resnet50_ibn_a
-from .process_kp import cal_feature
 import numpy as np
 
 def weights_init_kaiming(m):
@@ -296,19 +295,15 @@ class Part(nn.Module):
             self.classifier.apply(weights_init_classifier)
 
 
-    def forward(self, x, mask1, mask2):
+    def forward(self, x, mask1, mask2, mask3, mask4, mask5):
         if self.training:
             global_feat = self.base(x)
             # global_feat = nn.functional.interpolate(global_feat, scale_factor=16, mode='nearest')
-            feat1 = torch.mul(global_feat, mask1.cuda())
-            feat1 = feat1.mean(2, False)
-            feat1 = feat1.mean(2, False)
-            feat2 = torch.mul(global_feat, mask2.cuda())
-            feat2 = feat2.mean(2, False)
-            feat2 = feat2.mean(2, False)
-            # feat3 = cal_feature(global_feat, 8, 10, path, 1)
-            # feat4 = cal_feature(global_feat, 8, 13, path, 1)
-            # feat5 = cal_feature(global_feat, 0, 0, path, 0)
+            feat1 = self.feat_process(global_feat, mask1)
+            feat2 = self.feat_process(global_feat, mask2)
+            feat3 = self.feat_process(global_feat, mask3)
+            feat4 = self.feat_process(global_feat, mask4)
+            feat5 = self.feat_process(global_feat, mask5)
             global_feat = self.gap(global_feat)  # (b, 2048, 1, 1)
             global_feat = global_feat.view(global_feat.shape[0], -1)  # flatten to (bs, 2048)
 
@@ -317,21 +312,19 @@ class Part(nn.Module):
             elif self.neck == 'bnneck':
                 feat1 = self.bottleneck(feat1)  # normalize for angular softmax
                 feat2 = self.bottleneck(feat2)
-                # feat3 = self.bottleneck(feat3)
-                # feat4 = self.bottleneck(feat4)
-                # feat5 = self.bottleneck(feat5)
+                feat3 = self.bottleneck(feat3)
+                feat4 = self.bottleneck(feat4)
+                feat5 = self.bottleneck(feat5)
                 feat = self.bottleneck(global_feat)
 
             cls_score1 = self.classifier(feat1)
             cls_score2 = self.classifier(feat2)
-            # cls_score3 = self.classifier(feat3)
-            # cls_score4 = self.classifier(feat4)
-            # cls_score5 = self.classifier(feat5)
+            cls_score3 = self.classifier(feat3)
+            cls_score4 = self.classifier(feat4)
+            cls_score5 = self.classifier(feat5)
             cls_score = self.classifier(feat)
-            score = [cls_score1, cls_score2, cls_score]
-            feats = [feat1, feat2,  feat]
-            # score = [cls_score1, cls_score2, cls_score3, cls_score4, cls_score5, cls_score]
-            # feats = [feat1, feat2, feat3, feat4, feat5, feat]
+            score = [cls_score1, cls_score2, cls_score3, cls_score4, cls_score5, cls_score]
+            feats = [feat1, feat2, feat3, feat4, feat5, feat]
             return score, feats  # global feature for triplet loss
         else:
             global_feat = self.base(x)
@@ -356,3 +349,9 @@ class Part(nn.Module):
             if 'classifier' in i:
                 continue
             self.state_dict()[i].copy_(param_dict[i])
+
+    def feat_process(self, global_feat, mask):
+        feat = torch.mul(global_feat, mask.cuda())
+        feat = feat.mean(2, False)
+        feat = feat.mean(2, False)
+        return feat

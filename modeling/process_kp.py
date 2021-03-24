@@ -148,7 +148,7 @@ def cal_mask(p, a, b):
             a[line[i][1]][line[i][0]] = 1
         else:
             print(p)
-    mask = a.view(1, 16, 8).repeat(2048, 1, 1)
+    mask = torch.unsqueeze(a, 0)
     return mask
 
 def cal_kp(a, b):
@@ -169,21 +169,20 @@ def cal_kp(a, b):
 
 
 def save_kp():
-    # mask1 = cal_kp(1, 8)
-    # mask2 = cal_kp(2, 5)
-    # mask3 = cal_kp(8, 10)
-    # mask4 = cal_kp(8, 13)
+    mask1 = cal_kp(1, 8)
+    mask2 = cal_kp(2, 5)
+    mask3 = cal_kp(8, 10)
+    mask4 = cal_kp(8, 13)
     mask5 = cal_kp(0, 0)
-    # pt1, pt2 = get_leg_data(p)
-    # torch.save(mask1, 'mask1.pt')
-    # torch.save(mask2, 'mask2.pt')
-    # torch.save(mask3, 'mask3.pt')
-    # torch.save(mask4, 'mask4.pt')
+    torch.save(mask1, 'mask1.pt')
+    torch.save(mask2, 'mask2.pt')
+    torch.save(mask3, 'mask3.pt')
+    torch.save(mask4, 'mask4.pt')
     torch.save(mask5, 'mask5.pt')
 
 
 data_path = "/home/yhl/data/VC/"
-# save_kp()
+save_kp()
 # a = torch.randn(4,4)
 # b = torch.randn(4,4)
 # d = {"1":a}
