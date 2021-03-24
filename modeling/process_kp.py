@@ -181,8 +181,8 @@ def save_kp():
     torch.save(mask5, 'mask5.pt')
 
 
-data_path = "/home/yhl/data/VC/"
-save_kp()
+data_path = "/home/yhl/data/"
+# save_kp()
 # a = torch.randn(4,4)
 # b = torch.randn(4,4)
 # d = {"1":a}
@@ -256,3 +256,15 @@ save_kp()
 # json_paths = glob.glob(osp.join(data_path,  "train", '*.json'))
 # for p in json_paths:
 #     os.remove(p)
+
+# json_paths = glob.glob(osp.join(data_path, 'kp', "query", '*.json'))
+# num = 0
+# for p in json_paths:
+#     with open(p, 'rb') as f:
+#         params = json.load(f)
+#         if len(params['people'])>0:
+#             pose = params['people'][0]['pose_keypoints_2d']
+#             if pose[3 * 0 + 2] == 0 and pose[3 * 15 + 2] == 0 and pose[3 * 16 + 2] == 0 and pose[3 * 17 + 2] == 0 and pose[3 * 18 + 2] == 0:
+#                 print(p)
+#                 num += 1
+# print(num)
