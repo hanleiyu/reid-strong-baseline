@@ -42,6 +42,43 @@ def get_leg_data(path):
     return t1, t2, t3, t4
 
 
+def get_arm_data(path):
+    t1 = []
+    t2 = []
+    t3 = []
+    t4 = []
+    with open(path, 'rb') as f:
+        params = json.load(f)
+        if len(params) > 0:
+            if params[3 * 10 + 2] != 0 and params[3 * 11 + 2] != 0:
+                t1 = [params[3 * 10], params[3 * 10 + 1]]
+                t2 = [params[3 * 11], params[3 * 11 + 1]]
+            if params[3 * 13 + 2] != 0 and params[3 * 14 + 2] != 0:
+                t3 = [params[3 * 13], params[3 * 13 + 1]]
+                t4 = [params[3 * 14], params[3 * 14 + 1]]
+    f.close()
+
+    return t1, t2, t3, t4
+
+
+def get_thigh_data(path):
+    t1 = []
+    t2 = []
+    t3 = []
+    t4 = []
+    with open(path, 'rb') as f:
+        params = json.load(f)
+        if len(params) > 0:
+            if params[3 * 8 + 2] != 0 and params[3 * 10 + 2] != 0:
+                t1 = [params[3 * 8], params[3 * 8 + 1]]
+                t2 = [params[3 * 10], params[3 * 10 + 1]]
+            if params[3 * 8 + 2] != 0 and params[3 * 13 + 2] != 0:
+                t3 = [params[3 * 8], params[3 * 8 + 1]]
+                t4 = [params[3 * 13], params[3 * 13 + 1]]
+    f.close()
+
+    return t1, t2, t3, t4
+
 def dda_line_points(pt1, pt2):
     line = []
     if len(pt1) > 0:
@@ -135,7 +172,7 @@ def remove(name, threshold):
 
 
 def cal_mask(p, a, b):
-    if a == 0 :
+    if a == 0:
         pt1, pt2, pt3, pt4 = get_leg_data(p)
         line = dda_line_points(pt1, pt2) + dda_line_points(pt3, pt4)
     else:
@@ -169,15 +206,16 @@ def cal_kp(a, b):
 
 
 def save_kp():
-    mask1 = cal_kp(1, 8)
-    mask2 = cal_kp(2, 5)
-    mask3 = cal_kp(8, 10)
-    mask4 = cal_kp(8, 13)
+    # mask1 = cal_kp(1, 8)
+    # mask2 = cal_kp(2, 5)
+    # mask3 = cal_kp(8, 10)
+    # mask4 = cal_kp(8, 13)
     mask5 = cal_kp(0, 0)
-    torch.save(mask1, 'mask1.pt')
-    torch.save(mask2, 'mask2.pt')
-    torch.save(mask3, 'mask3.pt')
-    torch.save(mask4, 'mask4.pt')
+    mask5 = cal_kp(810, 0)
+    # torch.save(mask1, 'mask1.pt')
+    # torch.save(mask2, 'mask2.pt')
+    # torch.save(mask3, 'mask3.pt')
+    # torch.save(mask4, 'mask4.pt')
     torch.save(mask5, 'mask5.pt')
 
 
