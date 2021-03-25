@@ -42,7 +42,7 @@ def create_supervised_trainer(model, optimizer, loss_fn,
     def _update(engine, batch):
         model.train()
         optimizer.zero_grad()
-        img, target, _, _ = batch
+        img, target = batch
         img = img.to(device) if torch.cuda.device_count() >= 1 else img
         target = target.to(device) if torch.cuda.device_count() >= 1 else target
         score, feat = model(img)
@@ -153,7 +153,7 @@ def create_supervised_evaluator(model, metrics,
     def _inference(engine, batch):
         model.eval()
         with torch.no_grad():
-            data, pids, camids, _ = batch
+            data, pids, camids = batch
             data = data.to(device) if torch.cuda.device_count() >= 1 else data
             feat = model(data)
             return feat, pids, camids
