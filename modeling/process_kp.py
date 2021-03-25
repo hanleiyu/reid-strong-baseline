@@ -161,6 +161,25 @@ def get_thigh_data(path):
     return t1, t2, t3, t4
 
 
+def get_face_data(path):
+    t1 = []
+    t2 = []
+    t3 = []
+    t4 = []
+    with open(path, 'rb') as f:
+        params = json.load(f)
+        if len(params) > 0:
+            if params[3 * 8 + 2] != 0 and params[3 * 10 + 2] != 0:
+                t1 = [params[3 * 8], params[3 * 8 + 1]]
+                t2 = [params[3 * 10], params[3 * 10 + 1]]
+            if params[3 * 8 + 2] != 0 and params[3 * 13 + 2] != 0:
+                t3 = [params[3 * 8], params[3 * 8 + 1]]
+                t4 = [params[3 * 13], params[3 * 13 + 1]]
+    f.close()
+
+    return t1, t2, t3, t4
+
+
 def dda_line_points(pt1, pt2):
     line = []
     if len(pt1) > 0:
@@ -195,24 +214,33 @@ def dda_line_points(pt1, pt2):
 def cal_mask(p, a, b=0):
     pt3 = []
     pt4 = []
-    if a == "leg":
-        pt1, pt2, pt3, pt4 = get_leg_data(p)
-    elif a == "thigh":
-        pt1, pt2, pt3, pt4 = get_thigh_data(p)
-    elif a == "arm":
-        pt1, pt2, pt3, pt4 = get_arm_data(p)
-    elif a == "hand":
-        pt1, pt2, pt3, pt4 = get_hand_data(p)
-    else:
-        pt1, pt2 = get_json_data(p, a, b)
-
-    line = dda_line_points(pt1, pt2) + dda_line_points(pt3, pt4)
     m = torch.zeros(size=(16, 8))
-    for i in range(len(line)):
-        if line[i][0] <= 7 and line[i][1] <= 15:
-            m[line[i][1]][line[i][0]] = 1
+    if a != "face":
+        if a == "leg":
+            pt1, pt2, pt3, pt4 = get_leg_data(p)
+        elif a == "thigh":
+            pt1, pt2, pt3, pt4 = get_thigh_data(p)
+        elif a == "arm":
+            pt1, pt2, pt3, pt4 = get_arm_data(p)
+        elif a == "hand":
+            pt1, pt2, pt3, pt4 = get_hand_data(p)
         else:
-            print(p)
+            pt1, pt2 = get_json_data(p, a, b)
+
+        line = dda_line_points(pt1, pt2) + dda_line_points(pt3, pt4)
+
+        for i in range(len(line)):
+            if line[i][0] <= 7 and line[i][1] <= 15:
+                m[line[i][1]][line[i][0]] = 1
+            else:
+                print(p)
+    else:
+        with open(p, 'rb') as f:
+            params = json.load(f)
+            if len(params) > 0:
+                t = params[3*1]
+            for i in range(t+1):
+                m[:][i] = 1
     mask = torch.unsqueeze(m, 0)
     return mask
 
@@ -224,13 +252,14 @@ def cal_kp(path):
         img = p[-28:-15]
         m1 = cal_mask(p, 1, 8)
         m2 = cal_mask(p, 2, 5)
-        m3 = cal_mask(p, 8, 10)
-        m4 = cal_mask(p, 8, 13)
+        # m3 = cal_mask(p, 8, 10)
+        # m4 = cal_mask(p, 8, 13)
         m5 = cal_mask(p, "leg")
-        # m6 = cal_mask(p, "thigh")
-        # m7 = cal_mask(p, "arm")
-        # m8 = cal_mask(p, "hand")
-        mask = torch.stack((m1, m2, m3, m4, m5), 0)
+        m6 = cal_mask(p, "thigh")
+        m7 = cal_mask(p, "arm")
+        m8 = cal_mask(p, "hand")
+        m9 = cal_mask(p, "face")
+        mask = torch.stack((m1, m2, m5, m6, m7, m8, m9), 0)
         dictionary.update({img: mask})
     return dictionary
 
