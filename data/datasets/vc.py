@@ -58,14 +58,14 @@ class VC(BaseImageDataset):
             raise RuntimeError("'{}' is not available".format(self.gallery_dir))
 
     def _process_dir(self, dir_path, relabel=False):
-        kps1 = torch.load('/home/yhl/data/VC/mask1.pt')
-        kps2 = torch.load('/home/yhl/data/VC/mask2.pt')
-        kps3 = torch.load('/home/yhl/data/VC/mask3.pt')
-        kps4 = torch.load('/home/yhl/data/VC/mask4.pt')
-        kps5 = torch.load('/home/yhl/data/VC/mask5.pt')
+        if dir_path.find("train") != -1:
+            kps = torch.load('/home/yhl/data/VC/maskt.pt')
+        elif dir_path.find("gallery") != -1:
+            kps = torch.load('/home/yhl/data/VC/maskg.pt')
+        elif dir_path.find("query") != -1:
+            kps = torch.load('/home/yhl/data/VC/maskq.pt')
 
         img_paths = glob.glob(osp.join(dir_path, '*.jpg'))
-        # pattern = re.compile(r'([-\d]+)_c(\d)')
 
         pid_container = set()
         for img_path in img_paths:
@@ -78,16 +78,12 @@ class VC(BaseImageDataset):
         for img_path in img_paths:
             pid = int(img_path[-17:-13])
             camid = int(img_path[-11])
-            mask1 = kps1[img_path[-17:-4]]
-            mask2 = kps2[img_path[-17:-4]]
-            mask3 = kps3[img_path[-17:-4]]
-            mask4 = kps4[img_path[-17:-4]]
-            mask5 = kps5[img_path[-17:-4]]
+            mask = kps[img_path[-17:-4]]
             if pid == -1: continue  # junk images are just ignored
             assert 0 <= pid <= 1501  # pid == 0 means background
             assert 1 <= camid <= 6
             camid -= 1  # index starts from 0
             if relabel: pid = pid2label[pid]
-            dataset.append((img_path, pid, camid, mask1, mask2, mask3, mask4, mask5))
+            dataset.append((img_path, pid, camid, mask))
 
         return dataset

@@ -10,6 +10,68 @@ import numpy as np
 import torch
 
 
+def resize_json_data(path, h, w):
+    with open(path, 'rb') as f:
+        params = json.load(f)
+        if len(params['people']) < 1:
+            pose = []
+            print(path)
+        else:
+            pose = params['people'][0]['pose_keypoints_2d']
+            # print("before", pose)
+            for i in range(0, 25):
+                pose[3 * i] *= w
+                pose[3 * i + 1] *= h
+                pose[3 * i] = math.floor(pose[3 * i])
+                pose[3 * i + 1] = math.floor(pose[3 * i + 1])
+            # print("after", pose)
+    f.close()
+
+    return pose
+
+
+def write_json_data(path, pose):
+    with open(path, 'w') as r:
+        json.dump(pose, r)
+    r.close()
+
+
+def resize_kp(a, b, name):
+    img_paths = glob.glob(osp.join(data_path, name, '*.jpg'))
+    for img_path in img_paths:
+        img = Image.open(img_path)
+        w = a / img.size[0]
+        h = b / img.size[1]
+        json_path = osp.join(data_path, 'kp', name, img_path[-17:-4] + '_keypoints.json')
+        with open(json_path, 'rb') as f:
+            write_json_data(json_path, resize_json_data(json_path, h, w))
+
+
+def remove(name, threshold):
+    json_paths = glob.glob(osp.join(data_path, 'kp', name, '*.json'))
+    kp = [1, 2, 5, 8]
+    num = 0
+    for p in json_paths:
+        flag = 1
+        with open(p, 'rb') as f:
+            params = json.load(f)
+            for i in range(len(kp)):
+                if params[3 * kp[i] + 2] <= threshold:
+                    flag = 0
+                    break
+            if (params[3 * 10 + 2] <= threshold or params[3 * 11 + 2] <= threshold) and (
+                    params[3 * 13 + 2] <= threshold or params[3 * 14 + 2] <= threshold):
+                flag = 0
+        f.close()
+        if flag:
+            num += 1
+        else:
+            # print(p)
+            os.remove(p)
+            os.remove(osp.join(data_path, name, p[-28:-15] + '.jpg'))
+    print(num)
+
+
 def get_json_data(path, n1, n2):
     t1 = []
     t2 = []
@@ -129,69 +191,8 @@ def dda_line_points(pt1, pt2):
     return line
 
 
-def resize_json_data(path, h, w):
-    with open(path, 'rb') as f:
-        params = json.load(f)
-        if len(params['people']) < 1:
-            pose = []
-            print(path)
-        else:
-            pose = params['people'][0]['pose_keypoints_2d']
-            # print("before", pose)
-            for i in range(0, 25):
-                pose[3 * i] *= w
-                pose[3 * i + 1] *= h
-                pose[3 * i] = math.floor(pose[3 * i])
-                pose[3 * i + 1] = math.floor(pose[3 * i + 1])
-            # print("after", pose)
-    f.close()
 
-    return pose
-
-
-def write_json_data(path, pose):
-    with open(path, 'w') as r:
-        json.dump(pose, r)
-    r.close()
-
-
-def resize_kp(a, b, name):
-    img_paths = glob.glob(osp.join(data_path, name, '*.jpg'))
-    for img_path in img_paths:
-        img = Image.open(img_path)
-        w = a / img.size[0]
-        h = b / img.size[1]
-        json_path = osp.join(data_path, 'kp', name, img_path[-17:-4] + '_keypoints.json')
-        with open(json_path, 'rb') as f:
-            write_json_data(json_path, resize_json_data(json_path, h, w))
-
-
-def remove(name, threshold):
-    json_paths = glob.glob(osp.join(data_path, 'kp', name, '*.json'))
-    kp = [1, 2, 5, 8]
-    num = 0
-    for p in json_paths:
-        flag = 1
-        with open(p, 'rb') as f:
-            params = json.load(f)
-            for i in range(len(kp)):
-                if params[3 * kp[i] + 2] <= threshold:
-                    flag = 0
-                    break
-            if (params[3 * 10 + 2] <= threshold or params[3 * 11 + 2] <= threshold) and (
-                    params[3 * 13 + 2] <= threshold or params[3 * 14 + 2] <= threshold):
-                flag = 0
-        f.close()
-        if flag:
-            num += 1
-        else:
-            # print(p)
-            os.remove(p)
-            os.remove(osp.join(data_path, name, p[-28:-15] + '.jpg'))
-    print(num)
-
-
-def cal_mask(p, a, b):
+def cal_mask(p, a, b=0):
     pt3 = []
     pt4 = []
     if a == "leg":
@@ -215,44 +216,36 @@ def cal_mask(p, a, b):
     mask = torch.unsqueeze(m, 0)
     return mask
 
-def cal_kp(a, b):
+
+def cal_kp(path):
     dictionary = {}
-    json_paths = glob.glob(osp.join(data_path, 'kp', "train", '*.json'))
+    json_paths = glob.glob(osp.join(data_path, 'kp', path, '*.json'))
     for p in json_paths:
         img = p[-28:-15]
-        dictionary.update({img: cal_mask(p, a, b)})
-    json_paths = glob.glob(osp.join(data_path, 'kp', "gallery", '*.json'))
-    for p in json_paths:
-        img = p[-28:-15]
-        dictionary.update({img: cal_mask(p, a, b)})
-    json_paths = glob.glob(osp.join(data_path, 'kp', "query", '*.json'))
-    for p in json_paths:
-        img = p[-28:-15]
-        dictionary.update({img: cal_mask(p, a, b)})
+        m1 = cal_mask(p, 1, 8)
+        m2 = cal_mask(p, 2, 5)
+        m3 = cal_mask(p, 8, 10)
+        m4 = cal_mask(p, 8, 13)
+        m5 = cal_mask(p, "leg")
+        # m6 = cal_mask(p, "thigh")
+        # m7 = cal_mask(p, "arm")
+        # m8 = cal_mask(p, "hand")
+        mask = torch.stack((m1, m2, m3, m4, m5), 0)
+        dictionary.update({img: mask})
     return dictionary
 
 
 def save_kp():
-    # mask1 = cal_kp(1, 8)
-    # mask2 = cal_kp(2, 5)
-    # mask3 = cal_kp(8, 10)
-    # mask4 = cal_kp(8, 13)
-    # mask5 = cal_kp("leg", 0)
-    mask6 = cal_kp("thigh", 0)
-    mask7 = cal_kp("arm", 0)
-    mask8 = cal_kp("hand", 0)
-    # torch.save(mask1, 'mask1.pt')
-    # torch.save(mask2, 'mask2.pt')
-    # torch.save(mask3, 'mask3.pt')
-    # torch.save(mask4, 'mask4.pt')
-    # torch.save(mask5, 'mask5.pt')
-    torch.save(mask6, 'mask6.pt')
-    torch.save(mask7, 'mask7.pt')
-    torch.save(mask8, 'mask8.pt')
+    maskt = cal_kp("train")
+    maskg = cal_kp("gallery")
+    maskq = cal_kp("query")
+    torch.save(maskt, 'maskt.pt')
+    torch.save(maskg, 'maskg.pt')
+    torch.save(maskq, 'maskq.pt')
 
 
 data_path = "/home/yhl/data/VC/"
-# save_kp()
+save_kp()
 # a = torch.randn(4,4)
 # b = torch.randn(4,4)
 # d = {"1":a}
