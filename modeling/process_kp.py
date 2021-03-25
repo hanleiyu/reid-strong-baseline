@@ -161,25 +161,6 @@ def get_thigh_data(path):
     return t1, t2, t3, t4
 
 
-def get_face_data(path):
-    t1 = []
-    t2 = []
-    t3 = []
-    t4 = []
-    with open(path, 'rb') as f:
-        params = json.load(f)
-        if len(params) > 0:
-            if params[3 * 8 + 2] != 0 and params[3 * 10 + 2] != 0:
-                t1 = [params[3 * 8], params[3 * 8 + 1]]
-                t2 = [params[3 * 10], params[3 * 10 + 1]]
-            if params[3 * 8 + 2] != 0 and params[3 * 13 + 2] != 0:
-                t3 = [params[3 * 8], params[3 * 8 + 1]]
-                t4 = [params[3 * 13], params[3 * 13 + 1]]
-    f.close()
-
-    return t1, t2, t3, t4
-
-
 def dda_line_points(pt1, pt2):
     line = []
     if len(pt1) > 0:
@@ -274,7 +255,7 @@ def save_kp():
 
 
 data_path = "/home/yhl/data/VC/"
-save_kp()
+# save_kp()
 # a = torch.randn(4,4)
 # b = torch.randn(4,4)
 # d = {"1":a}
