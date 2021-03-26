@@ -135,7 +135,7 @@ class TripletLossUncertainty(object):
         else:
             loss = self.ranking_loss(dist_an - dist_ap, y)
         precision = torch.exp(-log_var)
-        loss = torch.sum(precision * loss + log_var, -1)
+        loss = precision.cuda() * loss + log_var.cuda()
         return loss, dist_ap, dist_an
 
 class CrossEntropyLabelSmooth(nn.Module):
@@ -171,7 +171,7 @@ class CrossEntropyLabelSmooth(nn.Module):
 
 class CrossEntropyLabelSmoothUncertainty(nn.Module):
         def __init__(self, num_classes, epsilon=0.1, use_gpu=True):
-            super(CrossEntropyLabelSmooth, self).__init__()
+            super(CrossEntropyLabelSmoothUncertainty, self).__init__()
             self.num_classes = num_classes
             self.epsilon = epsilon
             self.use_gpu = use_gpu
@@ -189,5 +189,5 @@ class CrossEntropyLabelSmoothUncertainty(nn.Module):
             targets = (1 - self.epsilon) * targets + self.epsilon / self.num_classes
             loss = (- targets * log_probs).mean(0).sum()
             precision = torch.exp(-log_var)
-            loss = torch.sum(precision * loss + log_var, -1)
+            loss = precision.cuda() * loss + log_var.cuda()
             return loss
