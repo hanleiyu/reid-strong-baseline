@@ -42,7 +42,7 @@ def resize_kp(a, b, name):
         img = Image.open(img_path)
         w = a / img.size[0]
         h = b / img.size[1]
-        json_path = osp.join(data_path, 'kp', name, img_path[-17:-4] + '_keypoints.json')
+        json_path = osp.join(data_path, 'kp', name, img_path.split("/")[-1][:-4] + '_keypoints.json')
         with open(json_path, 'rb') as f:
             write_json_data(json_path, resize_json_data(json_path, h, w))
 
@@ -66,7 +66,7 @@ def remove(name, threshold):
         if flag:
             num += 1
         else:
-            # print(p)
+            print(p)
             os.remove(p)
             os.remove(osp.join(data_path, name, p[-28:-15] + '.jpg'))
     print(num)
@@ -274,15 +274,34 @@ def save_kp():
 data_path = "/home/yhl/data/prcc/rgb"
 # save_kp()
 
-# resize_kp(8, 16, "train")
-# resize_kp(8, 16, "gallery")
-# resize_kp(8, 16, "query")
-# os.remove("/home/yhl/data/VC/kp/train/0338-04-03-08_keypoints.json")
-# os.remove("/home/yhl/data/VC/train/0338-04-03-08.jpg")
-
+resize_kp(8, 16, "train")
+resize_kp(8, 16, "val")
+resize_kp(8, 16, "test")
+os.remove("/home/yhl/data/prcc/rgb/kp/train/170_B_cropped_rgb561_keypoints.json")
+os.remove("/home/yhl/data/prcc/rgb/kp/train/157_C_cropped_rgb483_keypoints.json")
+os.remove("/home/yhl/data/prcc/rgb/kp/train/170_B_cropped_rgb561_keypoints.json")
+os.remove("/home/yhl/data/prcc/rgb/kp/train/170_B_cropped_rgb561_keypoints.json")
+os.remove("/home/yhl/data/prcc/rgb/kp/train/170_B_cropped_rgb561_keypoints.json")
+os.remove("/home/yhl/data/prcc/rgb/kp/train/170_B_cropped_rgb561_keypoints.json")
+os.remove("/home/yhl/data/prcc/rgb/kp/train/170_B_cropped_rgb561_keypoints.json")
+os.remove("/home/yhl/data/prcc/rgb/kp/train/170_B_cropped_rgb561_keypoints.json")
+os.remove("/home/yhl/data/prcc/rgb/kp/train/170_B_cropped_rgb561_keypoints.json")
+os.remove("/home/yhl/data/prcc/rgb/kp/train/170_B_cropped_rgb561_keypoints.json")
+os.remove("/home/yhl/data/prcc/rgb/kp/train/170_B_cropped_rgb561_keypoints.json")
+os.remove("/home/yhl/data/VC/train/0338-04-03-08.jpg")
+# /home/yhl/data/prcc/rgb/kp/train/170_B_cropped_rgb561_keypoints.json
+# /home/yhl/data/prcc/rgb/kp/train/157_C_cropped_rgb483_keypoints.json
+# /home/yhl/data/prcc/rgb/kp/train/314_B_cropped_rgb038_keypoints.json
+# /home/yhl/data/prcc/rgb/kp/train/157_C_cropped_rgb324_keypoints.json
+# /home/yhl/data/prcc/rgb/kp/train/147_C_cropped_rgb179_keypoints.json
+# /home/yhl/data/prcc/rgb/kp/train/330_C_cropped_rgb460_keypoints.json
+# /home/yhl/data/prcc/rgb/kp/train/197_A_cropped_rgb281_keypoints.json
+# /home/yhl/data/prcc/rgb/kp/train/170_B_cropped_rgb130_keypoints.json
+# /home/yhl/data/prcc/rgb/kp/train/286_A_cropped_rgb218_keypoints.json
+# /home/yhl/data/prcc/rgb/kp/test/182_A_cropped_rgb531_keypoints.json
 # remove("train", 0.25)
-# remove("gallery", 0.25)
-# remove("query", 0.25)
+# remove("val", 0.25)
+# remove("test", 0.25)
 
 # json_paths = glob.glob(osp.join(data_path, 'kp', "train", '*.json'))
 # for p in json_paths:
@@ -310,18 +329,20 @@ data_path = "/home/yhl/data/prcc/rgb"
 # feature = cal_feature(input, 1, 2, path)
 
 
-json_paths = glob.glob(osp.join(data_path, 'kp', "train", '*.json'))
-# num = 0
-num = [0 for _ in range(25)]
-for p in json_paths:
-    with open(p, 'rb') as f:
-        params = json.load(f)
-        if len(params['people'])>0:
-            pose = params['people'][0]['pose_keypoints_2d']
-            for i in range(25):
-                if params[3 * i + 2] == 0:
-                    num[i] += 1
-            # if pose[3 * 1 + 2] == 0:
-            #     print(p)
-            #     num += 1
-print(num)
+# json_paths = glob.glob(osp.join(data_path, 'kp', "test", '*.json'))
+# # num = 0
+# num = [0 for _ in range(25)]
+# for p in json_paths:
+#     with open(p, 'rb') as f:
+#         params = json.load(f)
+#         if len(params['people'])>0:
+#             pose = params['people'][0]['pose_keypoints_2d']
+#             for i in range(25):
+#                 if pose[3 * i + 2] == 0:
+#                     num[i] += 1
+#         else:
+#             print(p)
+#             # if pose[3 * 1 + 2] == 0:
+#             #     print(p)
+#             #     num += 1
+# print(num)
