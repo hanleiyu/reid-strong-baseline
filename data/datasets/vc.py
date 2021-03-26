@@ -59,11 +59,11 @@ class VC(BaseImageDataset):
 
     def _process_dir(self, dir_path, relabel=False):
         if dir_path.find("train") != -1:
-            kps = torch.load('/home/yhl/data/VC/part7/maskt.pt')
+            kps = torch.load('/home/yhl/data/VC/partb/maskt.pt')
         elif dir_path.find("gallery") != -1:
-            kps = torch.load('/home/yhl/data/VC/part7/maskg.pt')
+            kps = torch.load('/home/yhl/data/VC/partb/maskg.pt')
         elif dir_path.find("query") != -1:
-            kps = torch.load('/home/yhl/data/VC/part7/maskq.pt')
+            kps = torch.load('/home/yhl/data/VC/partb/maskq.pt')
 
         img_paths = glob.glob(osp.join(dir_path, '*.jpg'))
 
