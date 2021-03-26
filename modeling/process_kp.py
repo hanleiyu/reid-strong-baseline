@@ -196,7 +196,7 @@ def cal_mask(p, a, b=0):
     pt3 = []
     pt4 = []
     m = torch.zeros(size=(16, 8))
-    if a != "face":
+    if a != "face" and a != "body":
         if a == "leg":
             pt1, pt2, pt3, pt4 = get_leg_data(p)
         elif a == "thigh":
@@ -215,13 +215,28 @@ def cal_mask(p, a, b=0):
                 m[line[i][1]][line[i][0]] = 1
             else:
                 print(p)
-    else:
+    elif a == "face":
         with open(p, 'rb') as f:
             params = json.load(f)
             if len(params) > 0:
                 t = params[3*1]
             for i in range(t+1):
                 m[:][i] = 1
+    elif a == "body":
+        pt1, pt2, pt3, pt4 = get_leg_data(p)
+        line = dda_line_points(pt1, pt2) + dda_line_points(pt3, pt4)
+        pt1, pt2, pt3, pt4 = get_thigh_data(p)
+        line += dda_line_points(pt1, pt2) + dda_line_points(pt3, pt4)
+        pt1, pt2, pt3, pt4 = get_arm_data(p)
+        line += dda_line_points(pt1, pt2) + dda_line_points(pt3, pt4)
+        pt1, pt2, pt3, pt4 = get_hand_data(p)
+        line += dda_line_points(pt1, pt2) + dda_line_points(pt3, pt4)
+        pt1, pt2 = get_json_data(p, 1, 8)
+        pt3, pt4 = get_json_data(p, 2, 5)
+        line += dda_line_points(pt1, pt2) + dda_line_points(pt3, pt4)
+        for i in range(len(line)):
+            if line[i][0] <= 7 and line[i][1] <= 15:
+                m[line[i][1]][line[i][0]] = 1
     mask = torch.unsqueeze(m, 0)
     return mask
 
@@ -231,16 +246,18 @@ def cal_kp(path):
     json_paths = glob.glob(osp.join(data_path, 'kp', path, '*.json'))
     for p in json_paths:
         img = p[-28:-15]
-        m1 = cal_mask(p, 1, 8)
-        m2 = cal_mask(p, 2, 5)
-        # m3 = cal_mask(p, 8, 10)
-        # m4 = cal_mask(p, 8, 13)
-        m5 = cal_mask(p, "leg")
-        m6 = cal_mask(p, "thigh")
-        m7 = cal_mask(p, "arm")
-        m8 = cal_mask(p, "hand")
-        m9 = cal_mask(p, "face")
-        mask = torch.stack((m1, m2, m5, m6, m7, m8, m9), 0)
+        # m1 = cal_mask(p, 1, 8)
+        # m2 = cal_mask(p, 2, 5)
+        # # m3 = cal_mask(p, 8, 10)
+        # # m4 = cal_mask(p, 8, 13)
+        # m5 = cal_mask(p, "leg")
+        # m6 = cal_mask(p, "thigh")
+        # m7 = cal_mask(p, "arm")
+        # m8 = cal_mask(p, "hand")
+        # m9 = cal_mask(p, "face")
+        m10 = cal_mask(p, "body")
+        # mask = torch.stack((m9, m10), 0)
+        mask = torch.unsqueeze(m10, 0)
         dictionary.update({img: mask})
     return dictionary
 
@@ -255,7 +272,7 @@ def save_kp():
 
 
 data_path = "/home/yhl/data/VC/"
-# save_kp()
+save_kp()
 # a = torch.randn(4,4)
 # b = torch.randn(4,4)
 # d = {"1":a}

@@ -20,6 +20,14 @@ from layers import make_loss
 from solver import make_optimizer, WarmupMultiStepLR
 
 from utils.logger import setup_logger
+import random
+
+def setup_seed(seed):
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    np.random.seed(seed)
+    random.seed(seed)
+    torch.backends.cudnn.deterministic = True
 
 
 def train(cfg):
@@ -69,6 +77,7 @@ def train(cfg):
 
 
 def main():
+    setup_seed(20)
     parser = argparse.ArgumentParser(description="ReID Baseline Training")
     parser.add_argument(
         "--config_file", default="", help="path to config file", type=str
