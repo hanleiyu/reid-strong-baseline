@@ -10,105 +10,6 @@ import numpy as np
 import torch
 
 
-def get_json_data(path, n1, n2):
-    t1 = []
-    t2 = []
-    with open(path, 'rb') as f:
-        params = json.load(f)
-        if len(params) > 0:
-            t1 = [params[3 * n1], params[3 * n1 + 1]]
-            t2 = [params[3 * n2], params[3 * n2 + 1]]
-    f.close()
-
-    return t1, t2
-
-
-def get_leg_data(path):
-    t1 = []
-    t2 = []
-    t3 = []
-    t4 = []
-    with open(path, 'rb') as f:
-        params = json.load(f)
-        if len(params) > 0:
-            if params[3 * 10 + 2] != 0 and params[3 * 11 + 2] != 0:
-                t1 = [params[3 * 10], params[3 * 10 + 1]]
-                t2 = [params[3 * 11], params[3 * 11 + 1]]
-            if params[3 * 13 + 2] != 0 and params[3 * 14 + 2] != 0:
-                t3 = [params[3 * 13], params[3 * 13 + 1]]
-                t4 = [params[3 * 14], params[3 * 14 + 1]]
-    f.close()
-
-    return t1, t2, t3, t4
-
-
-def get_arm_data(path):
-    t1 = []
-    t2 = []
-    t3 = []
-    t4 = []
-    with open(path, 'rb') as f:
-        params = json.load(f)
-        if len(params) > 0:
-            if params[3 * 10 + 2] != 0 and params[3 * 11 + 2] != 0:
-                t1 = [params[3 * 10], params[3 * 10 + 1]]
-                t2 = [params[3 * 11], params[3 * 11 + 1]]
-            if params[3 * 13 + 2] != 0 and params[3 * 14 + 2] != 0:
-                t3 = [params[3 * 13], params[3 * 13 + 1]]
-                t4 = [params[3 * 14], params[3 * 14 + 1]]
-    f.close()
-
-    return t1, t2, t3, t4
-
-
-def get_thigh_data(path):
-    t1 = []
-    t2 = []
-    t3 = []
-    t4 = []
-    with open(path, 'rb') as f:
-        params = json.load(f)
-        if len(params) > 0:
-            if params[3 * 8 + 2] != 0 and params[3 * 10 + 2] != 0:
-                t1 = [params[3 * 8], params[3 * 8 + 1]]
-                t2 = [params[3 * 10], params[3 * 10 + 1]]
-            if params[3 * 8 + 2] != 0 and params[3 * 13 + 2] != 0:
-                t3 = [params[3 * 8], params[3 * 8 + 1]]
-                t4 = [params[3 * 13], params[3 * 13 + 1]]
-    f.close()
-
-    return t1, t2, t3, t4
-
-def dda_line_points(pt1, pt2):
-    line = []
-    if len(pt1) > 0:
-        x1, y1 = pt1[0], pt1[1]
-        x2, y2 = pt2[0], pt2[1]
-
-        dx = x2 - x1
-        dy = y2 - y1
-
-        if abs(dx) > abs(dy):
-            steps = abs(dx)
-        else:
-            steps = abs(dy)
-
-        if steps == 0 :
-            return [pt1, pt2]
-        else:
-            xinc = dx / steps
-            yinc = dy / steps
-            x = x1
-            y = y1
-
-        for k in range(steps + 1):
-                line.append([math.floor(x + 0.5), math.floor(y + 0.5)])
-                x += xinc
-                y += yinc
-
-    return line
-
-
 def resize_json_data(path, h, w):
     with open(path, 'rb') as f:
         params = json.load(f)
@@ -171,56 +72,207 @@ def remove(name, threshold):
     print(num)
 
 
-def cal_mask(p, a, b):
-    if a == 0:
+def get_json_data(path, n1, n2):
+    t1 = []
+    t2 = []
+    with open(path, 'rb') as f:
+        params = json.load(f)
+        if len(params) > 0:
+            t1 = [params[3 * n1], params[3 * n1 + 1]]
+            t2 = [params[3 * n2], params[3 * n2 + 1]]
+    f.close()
+
+    return t1, t2
+
+
+def get_leg_data(path):
+    t1 = []
+    t2 = []
+    t3 = []
+    t4 = []
+    with open(path, 'rb') as f:
+        params = json.load(f)
+        if len(params) > 0:
+            if params[3 * 10 + 2] != 0 and params[3 * 11 + 2] != 0:
+                t1 = [params[3 * 10], params[3 * 10 + 1]]
+                t2 = [params[3 * 11], params[3 * 11 + 1]]
+            if params[3 * 13 + 2] != 0 and params[3 * 14 + 2] != 0:
+                t3 = [params[3 * 13], params[3 * 13 + 1]]
+                t4 = [params[3 * 14], params[3 * 14 + 1]]
+    f.close()
+
+    return t1, t2, t3, t4
+
+
+def get_arm_data(path):
+    t1 = []
+    t2 = []
+    t3 = []
+    t4 = []
+    with open(path, 'rb') as f:
+        params = json.load(f)
+        if len(params) > 0:
+            if params[3 * 2 + 2] != 0 and params[3 * 3 + 2] != 0:
+                t1 = [params[3 * 2], params[3 * 2 + 1]]
+                t2 = [params[3 * 3], params[3 * 3 + 1]]
+            if params[3 * 5 + 2] != 0 and params[3 * 6 + 2] != 0:
+                t3 = [params[3 * 5], params[3 * 5 + 1]]
+                t4 = [params[3 * 6], params[3 * 6 + 1]]
+    f.close()
+
+    return t1, t2, t3, t4
+
+
+def get_hand_data(path):
+    t1 = []
+    t2 = []
+    t3 = []
+    t4 = []
+    with open(path, 'rb') as f:
+        params = json.load(f)
+        if len(params) > 0:
+            if params[3 * 3 + 2] != 0 and params[3 * 4 + 2] != 0:
+                t1 = [params[3 * 3], params[3 * 3 + 1]]
+                t2 = [params[3 * 4], params[3 * 4 + 1]]
+            if params[3 * 6 + 2] != 0 and params[3 * 7 + 2] != 0:
+                t3 = [params[3 * 6], params[3 * 6 + 1]]
+                t4 = [params[3 * 7], params[3 * 7 + 1]]
+    f.close()
+
+    return t1, t2, t3, t4
+
+
+def get_thigh_data(path):
+    t1 = []
+    t2 = []
+    t3 = []
+    t4 = []
+    with open(path, 'rb') as f:
+        params = json.load(f)
+        if len(params) > 0:
+            if params[3 * 8 + 2] != 0 and params[3 * 10 + 2] != 0:
+                t1 = [params[3 * 8], params[3 * 8 + 1]]
+                t2 = [params[3 * 10], params[3 * 10 + 1]]
+            if params[3 * 8 + 2] != 0 and params[3 * 13 + 2] != 0:
+                t3 = [params[3 * 8], params[3 * 8 + 1]]
+                t4 = [params[3 * 13], params[3 * 13 + 1]]
+    f.close()
+
+    return t1, t2, t3, t4
+
+
+def dda_line_points(pt1, pt2):
+    line = []
+    if len(pt1) > 0:
+        x1, y1 = pt1[0], pt1[1]
+        x2, y2 = pt2[0], pt2[1]
+
+        dx = x2 - x1
+        dy = y2 - y1
+
+        if abs(dx) > abs(dy):
+            steps = abs(dx)
+        else:
+            steps = abs(dy)
+
+        if steps == 0 :
+            return [pt1, pt2]
+        else:
+            xinc = dx / steps
+            yinc = dy / steps
+            x = x1
+            y = y1
+
+        for k in range(steps + 1):
+                line.append([math.floor(x + 0.5), math.floor(y + 0.5)])
+                x += xinc
+                y += yinc
+
+    return line
+
+
+
+def cal_mask(p, a, b=0):
+    pt3 = []
+    pt4 = []
+    m = torch.zeros(size=(16, 8))
+    if a != "face" and a != "body":
+        if a == "leg":
+            pt1, pt2, pt3, pt4 = get_leg_data(p)
+        elif a == "thigh":
+            pt1, pt2, pt3, pt4 = get_thigh_data(p)
+        elif a == "arm":
+            pt1, pt2, pt3, pt4 = get_arm_data(p)
+        elif a == "hand":
+            pt1, pt2, pt3, pt4 = get_hand_data(p)
+        else:
+            pt1, pt2 = get_json_data(p, a, b)
+
+        line = dda_line_points(pt1, pt2) + dda_line_points(pt3, pt4)
+
+        for i in range(len(line)):
+            if line[i][0] <= 7 and line[i][1] <= 15:
+                m[line[i][1]][line[i][0]] = 1
+            else:
+                print(p)
+    elif a == "face":
+        with open(p, 'rb') as f:
+            params = json.load(f)
+            if len(params) > 0:
+                t = params[3*1]
+            for i in range(t+1):
+                m[:][i] = 1
+    elif a == "body":
         pt1, pt2, pt3, pt4 = get_leg_data(p)
         line = dda_line_points(pt1, pt2) + dda_line_points(pt3, pt4)
-    else:
-        pt1, pt2 = get_json_data(p, a, b)
-        line = dda_line_points(pt1, pt2)
-
-    a = torch.zeros(size=(16, 8))
-    for i in range(len(line)):
-        if line[i][0] <= 7 and line[i][1] <= 15 :
-            a[line[i][1]][line[i][0]] = 1
-        else:
-            print(p)
-    mask = torch.unsqueeze(a, 0)
+        pt1, pt2, pt3, pt4 = get_thigh_data(p)
+        line += dda_line_points(pt1, pt2) + dda_line_points(pt3, pt4)
+        pt1, pt2, pt3, pt4 = get_arm_data(p)
+        line += dda_line_points(pt1, pt2) + dda_line_points(pt3, pt4)
+        pt1, pt2, pt3, pt4 = get_hand_data(p)
+        line += dda_line_points(pt1, pt2) + dda_line_points(pt3, pt4)
+        pt1, pt2 = get_json_data(p, 1, 8)
+        pt3, pt4 = get_json_data(p, 2, 5)
+        line += dda_line_points(pt1, pt2) + dda_line_points(pt3, pt4)
+        for i in range(len(line)):
+            if line[i][0] <= 7 and line[i][1] <= 15:
+                m[line[i][1]][line[i][0]] = 1
+    mask = torch.unsqueeze(m, 0)
     return mask
 
-def cal_kp(a, b):
+
+def cal_kp(path):
     dictionary = {}
-    json_paths = glob.glob(osp.join(data_path, 'kp', "train", '*.json'))
+    json_paths = glob.glob(osp.join(data_path, 'kp', path, '*.json'))
     for p in json_paths:
         img = p[-28:-15]
-        dictionary.update({img: cal_mask(p, a, b)})
-    json_paths = glob.glob(osp.join(data_path, 'kp', "gallery", '*.json'))
-    for p in json_paths:
-        img = p[-28:-15]
-        dictionary.update({img: cal_mask(p, a, b)})
-    json_paths = glob.glob(osp.join(data_path, 'kp', "query", '*.json'))
-    for p in json_paths:
-        img = p[-28:-15]
-        dictionary.update({img: cal_mask(p, a, b)})
+        # m1 = cal_mask(p, 1, 8)
+        # m2 = cal_mask(p, 2, 5)
+        # # m3 = cal_mask(p, 8, 10)
+        # # m4 = cal_mask(p, 8, 13)
+        # m5 = cal_mask(p, "leg")
+        # m6 = cal_mask(p, "thigh")
+        # m7 = cal_mask(p, "arm")
+        # m8 = cal_mask(p, "hand")
+        # m9 = cal_mask(p, "face")
+        m10 = cal_mask(p, "body")
+        # mask = torch.stack((m9, m10), 0)
+        mask = torch.unsqueeze(m10, 0)
+        dictionary.update({img: mask})
     return dictionary
 
 
 def save_kp():
-    # mask1 = cal_kp(1, 8)
-    # mask2 = cal_kp(2, 5)
-    # mask3 = cal_kp(8, 10)
-    # mask4 = cal_kp(8, 13)
-    mask5 = cal_kp(0, 0)
-    mask5 = cal_kp(810, 0)
-    # torch.save(mask1, 'mask1.pt')
-    # torch.save(mask2, 'mask2.pt')
-    # torch.save(mask3, 'mask3.pt')
-    # torch.save(mask4, 'mask4.pt')
-    torch.save(mask5, 'mask5.pt')
+    maskt = cal_kp("train")
+    maskg = cal_kp("gallery")
+    maskq = cal_kp("query")
+    torch.save(maskt, 'maskt.pt')
+    torch.save(maskg, 'maskg.pt')
+    torch.save(maskq, 'maskq.pt')
 
 
-data_path = "/home/yhl/data/"
-# save_kp()
+data_path = "/home/yhl/data/VC/"
+save_kp()
 # a = torch.randn(4,4)
 # b = torch.randn(4,4)
 # d = {"1":a}
@@ -302,7 +354,7 @@ data_path = "/home/yhl/data/"
 #         params = json.load(f)
 #         if len(params['people'])>0:
 #             pose = params['people'][0]['pose_keypoints_2d']
-#             if pose[3 * 0 + 2] == 0 and pose[3 * 15 + 2] == 0 and pose[3 * 16 + 2] == 0 and pose[3 * 17 + 2] == 0 and pose[3 * 18 + 2] == 0:
+#             if pose[3 * 9 + 2] == 0 and pose[3 * 12 + 2] == 0:
 #                 print(p)
 #                 num += 1
 # print(num)

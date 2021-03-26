@@ -11,6 +11,7 @@ INPUT:
   PROB: 0.5 # random horizontal flip
   RE_PROB: 0.5 # random erasing
   PADDING: 10
+  PART: 5
 
 DATASETS:
   NAMES: ('vc')
@@ -41,7 +42,7 @@ SOLVER:
   WEIGHT_DECAY_BIAS: 0.0005
   IMS_PER_BATCH: 128
 
-  STEPS: [40, 70]
+  STEPS: [50, 100, 150]
   GAMMA: 0.01
 
   WARMUP_FACTOR: 0.01
