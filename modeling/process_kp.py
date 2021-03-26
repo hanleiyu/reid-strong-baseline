@@ -271,18 +271,9 @@ def save_kp():
     torch.save(maskq, 'maskq.pt')
 
 
-data_path = "/home/yhl/data/VC/"
-save_kp()
-# a = torch.randn(4,4)
-# b = torch.randn(4,4)
-# d = {"1":a}
-# d.update({"2":b})
-# torch.save(d, 'a.pt')
-#
-# b = torch.load("a.pt")
-# print(b["1"])
-# b = torch.load("a.pt", map_location=torch.device('cuda'))
-# print(b["1"])
+data_path = "/home/yhl/data/prcc/rgb"
+# save_kp()
+
 # resize_kp(8, 16, "train")
 # resize_kp(8, 16, "gallery")
 # resize_kp(8, 16, "query")
@@ -308,20 +299,6 @@ save_kp()
 # print(img.size)
 # cal_mask("/home/yhl/data/VC/kp/query/0065-02-01-01_keypoints.json", 0, 0)
 
-# # Save
-# path = ['1', '2', '3', '4']
-# dictionary = {}
-# a = {path[0]: {'path': 'a', 'size': '10'}, path[1]: {'path': 'b', 'size': '20'}}
-# b = {path[2]: {'path': 'a', 'size': '10'}, path[3]: {'path': 'b', 'size': '20'}}
-# dictionary.update(a)
-# dictionary.update(b)
-# dictionary['1'].update({'hello': 'a'})
-# np.save('my_file.npy', dictionary)
-
-# # Load
-# read_dictionary = np.load('train.npy').item()
-# print(read_dictionary)
-
 
 # a = torch.randn(128, 2048, 16, 8)
 # # a = torch.randn(1,1,16,8)
@@ -333,28 +310,18 @@ save_kp()
 # feature = cal_feature(input, 1, 2, path)
 
 
-# json_paths = glob.glob(osp.join(data_path, 'kp', "query", '*.json'))
-# num = [0 for _ in range(25)]
-# for p in json_paths:
-#     with open(p, 'rb') as f:
-#         params = json.load(f)
-#         for i in range(25):
-#             if params[3 * i + 2] == 0:
-#                 num[i] += 1
-# print(num)
-
-# json_paths = glob.glob(osp.join(data_path,  "train", '*.json'))
-# for p in json_paths:
-#     os.remove(p)
-
-# json_paths = glob.glob(osp.join(data_path, 'kp', "query", '*.json'))
+json_paths = glob.glob(osp.join(data_path, 'kp', "train", '*.json'))
 # num = 0
-# for p in json_paths:
-#     with open(p, 'rb') as f:
-#         params = json.load(f)
-#         if len(params['people'])>0:
-#             pose = params['people'][0]['pose_keypoints_2d']
-#             if pose[3 * 9 + 2] == 0 and pose[3 * 12 + 2] == 0:
-#                 print(p)
-#                 num += 1
-# print(num)
+num = [0 for _ in range(25)]
+for p in json_paths:
+    with open(p, 'rb') as f:
+        params = json.load(f)
+        if len(params['people'])>0:
+            pose = params['people'][0]['pose_keypoints_2d']
+            for i in range(25):
+                if params[3 * i + 2] == 0:
+                    num[i] += 1
+            # if pose[3 * 1 + 2] == 0:
+            #     print(p)
+            #     num += 1
+print(num)

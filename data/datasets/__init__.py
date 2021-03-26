@@ -10,6 +10,7 @@ from .msmt17 import MSMT17
 from .veri import VeRi
 from .dataset_loader import ImageDataset, ImageDatasetPart
 from .vc import VC
+from .prcc import PRCC
 
 __factory = {
     'market1501': Market1501,
@@ -17,7 +18,8 @@ __factory = {
     'dukemtmc': DukeMTMCreID,
     'msmt17': MSMT17,
     'veri': VeRi,
-    'vc': VC
+    'vc': VC,
+    'prcc': PRCC
 }
 
 
