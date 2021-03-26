@@ -6,21 +6,28 @@
 
 import torch.nn.functional as F
 
-from .triplet_loss import TripletLoss, CrossEntropyLabelSmooth
+from .triplet_loss import TripletLoss, TripletLossUncertainty, CrossEntropyLabelSmooth, CrossEntropyLabelSmoothUncertainty
 from .center_loss import CenterLoss
 
 
 def make_loss(cfg, num_classes):    # modified by gu
     sampler = cfg.DATALOADER.SAMPLER
     if cfg.MODEL.METRIC_LOSS_TYPE == 'triplet':
-        triplet = TripletLoss(cfg.SOLVER.MARGIN)  # triplet loss
+        if cfg.MODEL.IF_UNCENTAINTY == 'on':
+            triplet = TripletLossUncertainty(cfg.SOLVER.MARGIN)
+        else:
+            triplet = TripletLoss(cfg.SOLVER.MARGIN)  # triplet loss
     else:
         print('expected METRIC_LOSS_TYPE should be triplet'
               'but got {}'.format(cfg.MODEL.METRIC_LOSS_TYPE))
 
     if cfg.MODEL.IF_LABELSMOOTH == 'on':
-        xent = CrossEntropyLabelSmooth(num_classes=num_classes)     # new add by luo
-        print("label smooth on, numclasses:", num_classes)
+        if cfg.MODEL.IF_UNCENTAINTY == 'on':
+            xent = CrossEntropyLabelSmoothUncertainty(num_classes=num_classes)  # new add by Yu
+            print("label smooth on, numclasses:", num_classes)
+        else:
+            xent = CrossEntropyLabelSmooth(num_classes=num_classes)     # new add by luo
+            print("label smooth on, numclasses:", num_classes)
 
     if sampler == 'softmax':
         def loss_func(score, feat, target):
@@ -29,10 +36,13 @@ def make_loss(cfg, num_classes):    # modified by gu
         def loss_func(score, feat, target):
             return triplet(feat, target)[0]
     elif cfg.DATALOADER.SAMPLER == 'softmax_triplet':
-        def loss_func(score, feat, target):
+        def loss_func(score, feat, target, log_var=None):
             if cfg.MODEL.METRIC_LOSS_TYPE == 'triplet':
                 if cfg.MODEL.IF_LABELSMOOTH == 'on':
-                    return xent(score, target) + triplet(feat, target)[0]
+                    if cfg.MODEL.IF_UNCENTAINTY == 'on':
+                        return xent(score, target, log_var) + triplet(feat, target, log_var)[0]
+                    else:
+                        return xent(score, target) + triplet(feat, target)[0]
                 else:
                     return F.cross_entropy(score, target) + triplet(feat, target)[0]
             else:

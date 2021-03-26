@@ -38,7 +38,10 @@ def train(cfg):
     model = build_part_model(cfg, num_classes)
 
     print('Train without center loss, the loss type is', cfg.MODEL.METRIC_LOSS_TYPE)
-    optimizer = make_optimizer(cfg, model)
+
+    if cfg.MODEL.IF_UNCENTAINTY == 'on':
+        log_var = torch.zeros((cfg.INPUT.PART + 1), requires_grad=True)
+    optimizer = make_optimizer(cfg, model, log_var)
     # scheduler = WarmupMultiStepLR(optimizer, cfg.SOLVER.STEPS, cfg.SOLVER.GAMMA, cfg.SOLVER.WARMUP_FACTOR,
     #                               cfg.SOLVER.WARMUP_ITERS, cfg.SOLVER.WARMUP_METHOD)
 
@@ -72,7 +75,8 @@ def train(cfg):
         scheduler,      # modify for using self trained model
         loss_func,
         num_query,
-        start_epoch     # add for using self trained model
+        start_epoch,     # add for using self trained model
+        log_var
     )
 
 

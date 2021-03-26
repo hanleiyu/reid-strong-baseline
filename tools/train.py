@@ -30,7 +30,7 @@ def setup_seed(seed):
     random.seed(seed)
     torch.backends.cudnn.deterministic = True
 
-print("strong")
+
 def train(cfg):
     # prepare dataset
     train_loader, val_loader, num_query, num_classes = make_data_loader(cfg)

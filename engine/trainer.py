@@ -56,7 +56,7 @@ def create_supervised_trainer(model, optimizer, loss_fn,
     return Engine(_update)
 
 
-def part_trainer(model, optimizer, loss_fn, device=None):
+def part_trainer(model, optimizer, loss_fn, log_var=None, device=None):
     if device:
         if torch.cuda.device_count() > 1:
             model = nn.DataParallel(model)
@@ -74,11 +74,18 @@ def part_trainer(model, optimizer, loss_fn, device=None):
         # optimizer.step()
         loss_part = [0 for _ in range(len(feat))]
         acc = [0 for _ in range(len(feat))]
-        ten = [torch.tensor(1.0).cuda() for _ in range(len(feat))]
-        for i in range(len(feat)):
-            loss_part[i] = loss_fn(score[i], feat[i], target)
-            acc[i] = (score[i].max(1)[1] == target).float().mean()
-        torch.autograd.backward(loss_part, ten)
+
+        if log_var is not None:
+            for i in range(len(feat)):
+                loss_part[i] = loss_fn(score[i], feat[i], target, log_var[i])
+                acc[i] = (score[i].max(1)[1] == target).float().mean()
+            loss_part.sum().backward()
+        else:
+            for i in range(len(feat)):
+                loss_part[i] = loss_fn(score[i], feat[i], target)
+                acc[i] = (score[i].max(1)[1] == target).float().mean()
+                ten = [torch.tensor(1.0).cuda() for _ in range(len(feat))]
+            torch.autograd.backward(loss_part, ten)
         optimizer.step()
         # loss = mean(loss_part)
 
@@ -287,7 +294,8 @@ def do_train_part(
         scheduler,
         loss_fn,
         num_query,
-        start_epoch
+        start_epoch,
+        log_var
 ):
     log_period = cfg.SOLVER.LOG_PERIOD
     checkpoint_period = cfg.SOLVER.CHECKPOINT_PERIOD
@@ -298,7 +306,10 @@ def do_train_part(
 
     logger = logging.getLogger("reid_baseline.train")
     logger.info("Start training")
-    trainer = part_trainer(model, optimizer, loss_fn, device=device)
+    if cfg.MODEL.IF_UNCENTAINTY == 'on':
+        trainer = part_trainer(model, optimizer, loss_fn, log_var, device=device)
+    else:
+        trainer = part_trainer(model, optimizer, loss_fn, device=device)
     evaluator = part_evaluator(model, metrics={
         'r1_mAP': R1_mAP(num_query, max_rank=50, feat_norm=cfg.TEST.FEAT_NORM)}, device=device)
 

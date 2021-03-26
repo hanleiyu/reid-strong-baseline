@@ -294,7 +294,6 @@ class Part(nn.Module):
             self.bottleneck.apply(weights_init_kaiming)
             self.classifier.apply(weights_init_classifier)
 
-
     def forward(self, x, mask):
         if self.training:
             global_feat = self.base(x)

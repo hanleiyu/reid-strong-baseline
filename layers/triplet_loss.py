@@ -115,6 +115,29 @@ class TripletLoss(object):
             loss = self.ranking_loss(dist_an - dist_ap, y)
         return loss, dist_ap, dist_an
 
+class TripletLossUncertainty(object):
+    def __init__(self, margin=None):
+        self.margin = margin
+        if margin is not None:
+            self.ranking_loss = nn.MarginRankingLoss(margin=margin)
+        else:
+            self.ranking_loss = nn.SoftMarginLoss()
+
+    def __call__(self, global_feat, labels, log_var, normalize_feature=False):
+        if normalize_feature:
+            global_feat = normalize(global_feat, axis=-1)
+        dist_mat = euclidean_dist(global_feat, global_feat)
+        dist_ap, dist_an = hard_example_mining(
+            dist_mat, labels)
+        y = dist_an.new().resize_as_(dist_an).fill_(1)
+        if self.margin is not None:
+            loss = self.ranking_loss(dist_an, dist_ap, y)
+        else:
+            loss = self.ranking_loss(dist_an - dist_ap, y)
+        precision = torch.exp(-log_var)
+        loss = torch.sum(precision * loss + log_var, -1)
+        return loss, dist_ap, dist_an
+
 class CrossEntropyLabelSmooth(nn.Module):
     """Cross entropy loss with label smoothing regularizer.
 
@@ -145,3 +168,26 @@ class CrossEntropyLabelSmooth(nn.Module):
         targets = (1 - self.epsilon) * targets + self.epsilon / self.num_classes
         loss = (- targets * log_probs).mean(0).sum()
         return loss
+
+class CrossEntropyLabelSmoothUncertainty(nn.Module):
+        def __init__(self, num_classes, epsilon=0.1, use_gpu=True):
+            super(CrossEntropyLabelSmooth, self).__init__()
+            self.num_classes = num_classes
+            self.epsilon = epsilon
+            self.use_gpu = use_gpu
+            self.logsoftmax = nn.LogSoftmax(dim=1)
+
+        def forward(self, inputs, targets, log_var):
+            """
+            Args:
+                inputs: prediction matrix (before softmax) with shape (batch_size, num_classes)
+                targets: ground truth labels with shape (num_classes)
+            """
+            log_probs = self.logsoftmax(inputs)
+            targets = torch.zeros(log_probs.size()).scatter_(1, targets.unsqueeze(1).data.cpu(), 1)
+            if self.use_gpu: targets = targets.cuda()
+            targets = (1 - self.epsilon) * targets + self.epsilon / self.num_classes
+            loss = (- targets * log_probs).mean(0).sum()
+            precision = torch.exp(-log_var)
+            loss = torch.sum(precision * loss + log_var, -1)
+            return loss
