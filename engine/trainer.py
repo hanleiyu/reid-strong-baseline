@@ -394,7 +394,7 @@ def do_train_part(
             logger.info("Epoch[{}] Iteration[{}/{}] Loss: {:.3f}, Loss1: {:.3f}, Loss2: {:.3f}, "
                         "Loss3: {:.3f}, Loss4: {:.3f}, Loss5: {:.3f}, Loss6: {:.3f}, Loss7: {:.3f},"
                         "Acc: {:.3f}, Acc1: {:.3f}, Acc2: {:.3f}, Acc3: {:.3f}, Acc4: {:.3f},"
-                        " Acc5: {:.3f}， Acc6: {:.3f}， Acc7: {:.3f}， Base Lr: {:.2e}"
+                        " Acc5: {:.3f}, Acc6: {:.3f}, Acc7: {:.3f}, Base Lr: {:.2e}"
                         .format(engine.state.epoch, ITER, len(train_loader),
                                 engine.state.metrics['avg_loss'], engine.state.metrics['avg_loss1'],
                                 engine.state.metrics['avg_loss2'], engine.state.metrics['avg_loss3'],
