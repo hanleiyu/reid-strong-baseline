@@ -36,11 +36,11 @@ def make_loss(cfg, num_classes):    # modified by gu
         def loss_func(score, feat, target):
             return triplet(feat, target)[0]
     elif cfg.DATALOADER.SAMPLER == 'softmax_triplet':
-        def loss_func(score, feat, target, log_var=None):
+        def loss_func(score, feat, target, log_var=None, c=None):
             if cfg.MODEL.METRIC_LOSS_TYPE == 'triplet':
                 if cfg.MODEL.IF_LABELSMOOTH == 'on':
                     if cfg.MODEL.IF_UNCENTAINTY == 'on':
-                        return xent(score, target, log_var) + triplet(feat, target, log_var)[0]
+                        return xent(score, target, log_var, c) + triplet(feat, target, log_var, c)[0]
                     else:
                         return xent(score, target) + triplet(feat, target)[0]
                 else:
