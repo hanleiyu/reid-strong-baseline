@@ -12,7 +12,7 @@ class PRCC(BaseImageDataset):
     """
     Dataset statistics:
     # identities: 221
-    # images: 9449 (train) + 1020 (query) + 8591 (gallery)
+    # images: 17887 (train) + 10800 (test gallery(A):3383 query:7417(B 3873 C 3543)) + 5003 (val)
     """
     dataset_dir = 'prcc/rgb'
 
@@ -20,22 +20,22 @@ class PRCC(BaseImageDataset):
         super(PRCC, self).__init__()
         self.dataset_dir = osp.join(root, self.dataset_dir)
         self.train_dir = osp.join(self.dataset_dir, 'train')
-        self.val_dir = osp.join(self.dataset_dir, 'val')
-        self.test_dir = osp.join(self.dataset_dir, 'test')
+        self.query_dir = osp.join(self.dataset_dir, 'queryc')
+        self.gallery_dir = osp.join(self.dataset_dir, 'gallery')
 
         self._check_before_run()
 
         train = self._process_dir(self.train_dir, relabel=True)
-        val = self._process_dir(self.val_dir, relabel=False)
-        test = self._process_dir(self.test_dir, relabel=False)
+        query = self._process_dir(self.query_dir, relabel=False)
+        gallery = self._process_dir(self.gallery_dir, relabel=False)
 
         if verbose:
             print("=> PRCC loaded")
-            self.print_dataset_statistics(train, val, test)
+            self.print_dataset_statistics(train, query, gallery)
 
         self.train = train
-        self.val = val
-        self.test = test
+        self.query = query
+        self.gallery = gallery
 
         self.num_train_pids, self.num_train_imgs, self.num_train_cams = self.get_imagedata_info(self.train)
         self.num_query_pids, self.num_query_imgs, self.num_query_cams = self.get_imagedata_info(self.query)
@@ -63,15 +63,15 @@ class PRCC(BaseImageDataset):
 
         pid_container = set()
         for img_path in img_paths:
-            pid = int(img_path[-24:-21])
+            pid = int(img_path.split("/")[-1][:3])
             if pid == -1: continue  # junk images are just ignored
             pid_container.add(pid)
         pid2label = {pid: label for label, pid in enumerate(pid_container)}
 
         dataset = []
         for img_path in img_paths:
-            pid = int(img_path[-24:-21])
-            camid = int(img_path[-20])
+            pid = int(img_path.split("/")[-1][:3])
+            camid = img_path.split("/")[-1][4]
             # mask = kps[img_path[-17:-4]]
             if relabel: pid = pid2label[pid]
             dataset.append((img_path, pid, camid))

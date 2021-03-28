@@ -123,7 +123,7 @@ class TripletLossUncertainty(object):
         else:
             self.ranking_loss = nn.SoftMarginLoss()
 
-    def __call__(self, global_feat, labels, log_var, c, normalize_feature=False):
+    def __call__(self, global_feat, labels, log_var, normalize_feature=False):
         if normalize_feature:
             global_feat = normalize(global_feat, axis=-1)
         dist_mat = euclidean_dist(global_feat, global_feat)
@@ -134,8 +134,8 @@ class TripletLossUncertainty(object):
             loss = self.ranking_loss(dist_an, dist_ap, y)
         else:
             loss = self.ranking_loss(dist_an - dist_ap, y)
-        precision = torch.exp(-2 * log_var)
-        loss = precision.cuda() * loss * c + log_var.cuda()
+        precision = torch.exp(-log_var)
+        loss = precision.cuda() * loss + log_var.cuda()
         return loss, dist_ap, dist_an
 
 class CrossEntropyLabelSmooth(nn.Module):
@@ -177,7 +177,7 @@ class CrossEntropyLabelSmoothUncertainty(nn.Module):
             self.use_gpu = use_gpu
             self.logsoftmax = nn.LogSoftmax(dim=1)
 
-        def forward(self, inputs, targets, log_var, c):
+        def forward(self, inputs, targets, log_var):
             """
             Args:
                 inputs: prediction matrix (before softmax) with shape (batch_size, num_classes)
@@ -189,5 +189,5 @@ class CrossEntropyLabelSmoothUncertainty(nn.Module):
             targets = (1 - self.epsilon) * targets + self.epsilon / self.num_classes
             loss = (- targets * log_probs).mean(0).sum()
             precision = torch.exp(-log_var)
-            loss = precision.cuda() * loss * c + log_var.cuda()
+            loss = precision.cuda() * loss + log_var.cuda()
             return loss

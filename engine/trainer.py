@@ -65,7 +65,7 @@ def part_trainer(model, optimizer, loss_fn, log_var=None, device=None):
     def _update(engine, batch):
         model.train()
         optimizer.zero_grad()
-        img, target, mask, c = batch
+        img, target, mask = batch
         img = img.to(device) if torch.cuda.device_count() >= 1 else img
         target = target.to(device) if torch.cuda.device_count() >= 1 else target
         score, feat = model(img, mask)
@@ -77,7 +77,7 @@ def part_trainer(model, optimizer, loss_fn, log_var=None, device=None):
         ten = [torch.tensor(1.0).cuda() for _ in range(len(feat))]
         for i in range(len(feat)):
             if log_var is not None:
-                loss_part[i] = loss_fn(score[i], feat[i], target, log_var[i], c[i])
+                loss_part[i] = loss_fn(score[i], feat[i], target, log_var[i])
             else:
                 loss_part[i] = loss_fn(score[i], feat[i], target)
             acc[i] = (score[i].max(1)[1] == target).float().mean()

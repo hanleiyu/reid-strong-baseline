@@ -22,6 +22,16 @@ def process_prcc(path):
             shutil.move(new_name, os.path.join(dataset_dirn, path))
 
 
+def process():
+    img_paths = glob.glob(os.path.join(dataset_dir, "query", "*.jpg"))
+    for img in img_paths:
+        if img.find("B") != -1:
+            shutil.move(img, os.path.join(dataset_dir, "queryb"))
+        # else:
+        #     shutil.move(img, os.path.join(dataset_dir, "query"))
+
 # process_prcc("train")
 # process_prcc("val")
 # process_prcc("test")
+
+process()

@@ -36,7 +36,7 @@ class ImageDataset(Dataset):
         return len(self.dataset)
 
     def __getitem__(self, index):
-        img_path, pid, camid, _ = self.dataset[index]
+        img_path, pid, camid = self.dataset[index]
         img = read_image(img_path)
 
         if self.transform is not None:
@@ -56,11 +56,11 @@ class ImageDatasetPart(Dataset):
         return len(self.dataset)
 
     def __getitem__(self, index):
-        img_path, pid, camid, mask, c = self.dataset[index]
+        img_path, pid, camid, mask = self.dataset[index]
         img = read_image(img_path)
 
         if self.transform is not None:
             img = self.transform(img)
 
-        return img, pid, camid, img_path, mask, c
+        return img, pid, camid, img_path, mask
 

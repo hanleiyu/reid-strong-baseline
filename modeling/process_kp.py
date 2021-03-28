@@ -47,7 +47,7 @@ def resize_kp(a, b, name):
             write_json_data(json_path, resize_json_data(json_path, h, w))
 
 
-def remove(name, threshold):
+def remove(name):
     json_paths = glob.glob(osp.join(data_path, 'kp', name, '*.json'))
     kp = [1, 2, 5, 8]
     num = 0
@@ -55,20 +55,30 @@ def remove(name, threshold):
         flag = 1
         with open(p, 'rb') as f:
             params = json.load(f)
-            for i in range(len(kp)):
-                if params[3 * kp[i] + 2] <= threshold:
-                    flag = 0
-                    break
-            if (params[3 * 10 + 2] <= threshold or params[3 * 11 + 2] <= threshold) and (
-                    params[3 * 13 + 2] <= threshold or params[3 * 14 + 2] <= threshold):
+            if (params[3 * 10 + 2] == 0 or params[3 * 11 + 2] == 0) and (
+                    params[3 * 13 + 2] == 0 or params[3 * 14 + 2] == 0):
                 flag = 0
+            elif (params[3 * 2 + 2] == 0 or params[3 * 3 + 2] == 0) and (
+                    params[3 * 5 + 2] == 0 or params[3 * 6 + 2] == 0):
+                flag = 0
+            elif (params[3 * 3 + 2] == 0 or params[3 * 4 + 2] == 0) and (
+                    params[3 * 7 + 2] == 0 or params[3 * 6 + 2] == 0):
+                flag = 0
+            elif params[3 * 10 + 2] == 0  and params[3 * 13 + 2] == 0:
+                flag = 0
+            else:
+                for i in range(len(kp)):
+                    if params[3 * kp[i] + 2] == 0:
+                        flag = 0
+                        break
+
         f.close()
         if flag:
             num += 1
         else:
             print(p)
             os.remove(p)
-            os.remove(osp.join(data_path, name, p[-28:-15] + '.jpg'))
+            os.remove(osp.join(data_path, name, p.split("/")[-1][:-15] + '.jpg'))
     print(num)
 
 
@@ -219,8 +229,8 @@ def cal_mask(p, a, b=0):
                     m[line[i][1]][line[i][0] - 1] = 1
                 if line[i][1] >= 1:
                     m[line[i][1] - 1][line[i][0]] = 1
-            else:
-                print(p)
+            # else:
+            #     print(p)
     elif a == "face":
         with open(p, 'rb') as f:
             params = json.load(f)
@@ -253,7 +263,7 @@ def cal_kp(path):
     dictionary = {}
     json_paths = glob.glob(osp.join(data_path, 'kp', path, '*.json'))
     for p in json_paths:
-        img = p[-28:-15]
+        img = p.split("/")[-1][:-15]
         m1, c1 = cal_mask(p, 1, 8)
         m2, c2 = cal_mask(p, 2, 5)
         # m3, c3 = cal_mask(p, 8, 10)
@@ -267,48 +277,30 @@ def cal_kp(path):
         mask = torch.stack((m1, m2, m5, m6, m7, m8, m9), 0)
         c = [c1, c2, c5, c6, c7, m8, m9]
         # mask = torch.unsqueeze(m10, 0)
-        dictionary.update({img: {"mask":mask, "confidence":c}})
+        dictionary.update({img: mask})
+        # dictionary.update({img: {"mask":mask, "confidence":c}})
     return dictionary
 
 
 def save_kp():
     maskt = cal_kp("train")
-    maskg = cal_kp("gallery")
-    maskq = cal_kp("query")
-    torch.save(maskt, osp.join(data_path, 'part7nc/maskt.pt'))
-    torch.save(maskg, osp.join(data_path, 'part7nc/maskg.pt'))
-    torch.save(maskq, osp.join(data_path, 'part7nc/maskq.pt'))
+    # maskg = cal_kp("gallery")
+    # maskq = cal_kp("query")
+    torch.save(maskt, osp.join(data_path, 'part7n/maskt.pt'))
+    # torch.save(maskg, osp.join(data_path, 'part7nc/maskg.pt'))
+    # torch.save(maskq, osp.join(data_path, 'part7nc/maskq.pt'))
 
 
 data_path = "/home/yhl/data/prcc/rgb"
-# save_kp()
+save_kp()
 
-resize_kp(8, 16, "train")
-resize_kp(8, 16, "val")
-resize_kp(8, 16, "test")
-os.remove("/home/yhl/data/prcc/rgb/kp/train/170_B_cropped_rgb561_keypoints.json")
-os.remove("/home/yhl/data/prcc/rgb/kp/train/157_C_cropped_rgb483_keypoints.json")
-os.remove("/home/yhl/data/prcc/rgb/kp/train/170_B_cropped_rgb561_keypoints.json")
-os.remove("/home/yhl/data/prcc/rgb/kp/train/170_B_cropped_rgb561_keypoints.json")
-os.remove("/home/yhl/data/prcc/rgb/kp/train/170_B_cropped_rgb561_keypoints.json")
-os.remove("/home/yhl/data/prcc/rgb/kp/train/170_B_cropped_rgb561_keypoints.json")
-os.remove("/home/yhl/data/prcc/rgb/kp/train/170_B_cropped_rgb561_keypoints.json")
-os.remove("/home/yhl/data/prcc/rgb/kp/train/170_B_cropped_rgb561_keypoints.json")
-os.remove("/home/yhl/data/prcc/rgb/kp/train/170_B_cropped_rgb561_keypoints.json")
-os.remove("/home/yhl/data/prcc/rgb/kp/train/170_B_cropped_rgb561_keypoints.json")
-os.remove("/home/yhl/data/prcc/rgb/kp/train/170_B_cropped_rgb561_keypoints.json")
-os.remove("/home/yhl/data/VC/train/0338-04-03-08.jpg")
-# /home/yhl/data/prcc/rgb/kp/train/170_B_cropped_rgb561_keypoints.json
-# /home/yhl/data/prcc/rgb/kp/train/157_C_cropped_rgb483_keypoints.json
-# /home/yhl/data/prcc/rgb/kp/train/314_B_cropped_rgb038_keypoints.json
-# /home/yhl/data/prcc/rgb/kp/train/157_C_cropped_rgb324_keypoints.json
-# /home/yhl/data/prcc/rgb/kp/train/147_C_cropped_rgb179_keypoints.json
-# /home/yhl/data/prcc/rgb/kp/train/330_C_cropped_rgb460_keypoints.json
-# /home/yhl/data/prcc/rgb/kp/train/197_A_cropped_rgb281_keypoints.json
-# /home/yhl/data/prcc/rgb/kp/train/170_B_cropped_rgb130_keypoints.json
-# /home/yhl/data/prcc/rgb/kp/train/286_A_cropped_rgb218_keypoints.json
-# /home/yhl/data/prcc/rgb/kp/test/182_A_cropped_rgb531_keypoints.json
-# remove("train", 0.25)
+# resize_kp(8, 16, "train")
+# resize_kp(8, 16, "val")
+# resize_kp(8, 16, "test")
+# os.remove("/home/yhl/data/prcc/rgb/kp/train/170_B_cropped_rgb561_keypoints.json")
+# os.remove("/home/yhl/data/VC/train/0338-04-03-08.jpg")
+
+# remove("train")
 # remove("val", 0.25)
 # remove("test", 0.25)
 
@@ -338,20 +330,21 @@ os.remove("/home/yhl/data/VC/train/0338-04-03-08.jpg")
 # feature = cal_feature(input, 1, 2, path)
 
 
-# json_paths = glob.glob(osp.join(data_path, 'kp', "test", '*.json'))
-# # num = 0
-# num = [0 for _ in range(25)]
+# json_paths = glob.glob(osp.join(data_path, 'kp', "train", '*.json'))
+# num = 0
+# # num = [0 for _ in range(25)]
 # for p in json_paths:
 #     with open(p, 'rb') as f:
 #         params = json.load(f)
-#         if len(params['people'])>0:
-#             pose = params['people'][0]['pose_keypoints_2d']
-#             for i in range(25):
-#                 if pose[3 * i + 2] == 0:
-#                     num[i] += 1
-#         else:
-#             print(p)
-#             # if pose[3 * 1 + 2] == 0:
-#             #     print(p)
-#             #     num += 1
+#         if len(params)>0:
+#             # pose = params['people'][0]['pose_keypoints_2d']
+#         #     for i in range(25):
+#         #         if pose[3 * i + 2] == 0:
+#         #             num[i] += 1
+#         # else:
+#         #     print(p)
+#             if (params[3 * 10 + 2] == 0 or params[3 * 11 + 2] == 0) and (params[3 * 13 + 2] == 0 or params[3 * 14 + 2] == 0):
+#                 print(p)
+#                 os.remove(p)
+#                 num += 1
 # print(num)
