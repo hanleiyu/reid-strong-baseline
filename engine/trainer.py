@@ -350,11 +350,11 @@ def do_train_part(
         ITER += 1
         if ITER % log_period == 0:
             logger.info("Epoch[{}] Iteration[{}/{}] Loss: {:.3f}, Loss1: {:.3f}, "
-                        "Acc: {:.3f}, Acc1: {:.3f},  Base Lr: {:.2e}"
+                        "Acc: {:.3f}, Acc1: {:.3f},  Base Lr: {:.2e}, var: {:.3f}, var1: {:.3f}"
                         .format(engine.state.epoch, ITER, len(train_loader),
                                 engine.state.metrics['avg_loss'], engine.state.metrics['avg_loss1'],
                                 engine.state.metrics['avg_acc'], engine.state.metrics['avg_acc1'],
-                                scheduler.get_lr()[0]))
+                                scheduler.get_lr()[0], log_var[0], log_var[1]))
         # if ITER % log_period == 0:
         #     logger.info("Epoch[{}] Iteration[{}/{}] Loss: {:.3f}, Loss1: {:.3f}, Loss2: {:.3f},"
         #                 "Acc: {:.3f}, Acc1: {:.3f}, Acc2: {:.3f}, Base Lr: {:.2e}"
@@ -394,7 +394,9 @@ def do_train_part(
         #     logger.info("Epoch[{}] Iteration[{}/{}] Loss: {:.3f}, Loss1: {:.3f}, Loss2: {:.3f}, "
         #                 "Loss3: {:.3f}, Loss4: {:.3f}, Loss5: {:.3f}, Loss6: {:.3f}, Loss7: {:.3f},"
         #                 "Acc: {:.3f}, Acc1: {:.3f}, Acc2: {:.3f}, Acc3: {:.3f}, Acc4: {:.3f},"
-        #                 " Acc5: {:.3f}, Acc6: {:.3f}, Acc7: {:.3f}, Base Lr: {:.2e}"
+        #                 " Acc5: {:.3f}, Acc6: {:.3f}, Acc7: {:.3f}, Base Lr: {:.2e}, var: {:.3f}, "
+        #                 "var1: {:.3f}, var2: {:.3f}, var3: {:.3f}, var4: {:.3f}, var5: {:.3f}, "
+        #                 "var6: {:.3f}, var7: {:.3f}"
         #                 .format(engine.state.epoch, ITER, len(train_loader),
         #                         engine.state.metrics['avg_loss'], engine.state.metrics['avg_loss1'],
         #                         engine.state.metrics['avg_loss2'], engine.state.metrics['avg_loss3'],
@@ -404,7 +406,8 @@ def do_train_part(
         #                         engine.state.metrics['avg_acc2'], engine.state.metrics['avg_acc3'],
         #                         engine.state.metrics['avg_acc4'], engine.state.metrics['avg_acc5'],
         #                         engine.state.metrics['avg_acc6'], engine.state.metrics['avg_acc7'],
-        #                         scheduler.get_lr()[0]))
+        #                         scheduler.get_lr()[0], log_var[0], log_var[1], log_var[2], log_var[3]
+        #                         , log_var[4], log_var[5], log_var[6], log_var[7]))
         if len(train_loader) == ITER:
             ITER = 0
 
