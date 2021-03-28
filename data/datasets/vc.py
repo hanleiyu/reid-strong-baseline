@@ -59,11 +59,11 @@ class VC(BaseImageDataset):
 
     def _process_dir(self, dir_path, relabel=False):
         if dir_path.find("train") != -1:
-            kps = torch.load('/home/yhl/data/VC/partb/maskt.pt')
+            kps = torch.load('/home/yhl/data/VC/part5nc/maskt.pt')
         elif dir_path.find("gallery") != -1:
-            kps = torch.load('/home/yhl/data/VC/partb/maskg.pt')
+            kps = torch.load('/home/yhl/data/VC/part5nc/maskg.pt')
         elif dir_path.find("query") != -1:
-            kps = torch.load('/home/yhl/data/VC/partb/maskq.pt')
+            kps = torch.load('/home/yhl/data/VC/part5nc/maskq.pt')
 
         img_paths = glob.glob(osp.join(dir_path, '*.jpg'))
 
@@ -78,12 +78,14 @@ class VC(BaseImageDataset):
         for img_path in img_paths:
             pid = int(img_path[-17:-13])
             camid = int(img_path[-11])
-            mask = kps[img_path[-17:-4]]
+            # mask = kps[img_path[-17:-4]]
+            mask = kps[img_path[-17:-4]]["mask"]
+            c = kps[img_path[-17:-4]]["confidence"]
             if pid == -1: continue  # junk images are just ignored
             assert 0 <= pid <= 1501  # pid == 0 means background
             assert 1 <= camid <= 6
             camid -= 1  # index starts from 0
             if relabel: pid = pid2label[pid]
-            dataset.append((img_path, pid, camid, mask))
+            dataset.append((img_path, pid, camid, mask, c))
 
         return dataset
