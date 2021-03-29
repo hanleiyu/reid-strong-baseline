@@ -20,6 +20,9 @@ from modeling import build_model
 from utils.logger import setup_logger
 
 
+def mean(lists):
+    return sum(lists)/len(lists)
+
 def main():
     parser = argparse.ArgumentParser(description="ReID Baseline Inference")
     parser.add_argument(
@@ -56,12 +59,16 @@ def main():
         os.environ['CUDA_VISIBLE_DEVICES'] = cfg.MODEL.DEVICE_ID
     cudnn.benchmark = True
 
-    gallery_loader, query_loader, num_query, num_classes = make_data_loader_prcc(cfg)
-    model = build_model(cfg, num_classes)
+    model = build_model(cfg, 71)
     model.load_param(cfg.TEST.WEIGHT)
-
-    prcc_inference(cfg, model, gallery_loader, query_loader, num_query)
-
+    map = [0 for _ in range(10)]
+    r1 = [0 for _ in range(10)]
+    r5 = [0 for _ in range(10)]
+    r10 = [0 for _ in range(10)]
+    for i in range(10):
+        val_loader, num_query = make_data_loader_prcc(cfg, trial=i)
+        r1[i], r5[i], r10[i], map[i] = prcc_inference(cfg, model, val_loader, num_query)
+    logger.info("map: {:.1%}, r1: {:.1%}, r5: {:.1%}, r10: {:.1%}".format(mean(map), mean(r1), mean(r5), mean(r10)))
 
 if __name__ == '__main__':
     main()

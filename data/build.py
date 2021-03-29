@@ -10,7 +10,9 @@ from .collate_batch import part_train_collate_fn, part_val_collate_fn, train_col
 from .datasets import init_dataset, ImageDataset, ImageDatasetPart
 from .samplers import RandomIdentitySampler, RandomIdentitySampler_Part
 from .transforms import build_transforms
-
+import random
+import glob
+import os.path as osp
 
 def make_data_loader(cfg):
     train_transforms = build_transforms(cfg, is_train=True)
@@ -79,3 +81,54 @@ def make_data_loader_part(cfg):
         collate_fn=part_val_collate_fn
     )
     return train_loader, val_loader, len(dataset.query), num_classes
+
+
+def make_data_loader_prcc(cfg, trial=0):
+    val_transforms = build_transforms(cfg, is_train=False)
+    num_workers = cfg.DATALOADER.NUM_WORKERS
+
+    random.seed(trial)
+    ids = ['188', '005', '091', '309', '075', '162', '182', '223', '061', '006', '321', '324', '057',
+          '279', '156', '328', '152', '282', '118', '004', '099', '319', '257', '008', '272', '214',
+          '058', '146', '112', '230', '094', '186', '323', '120', '242', '071', '320', '264', '265',
+          '001', '072', '097', '018', '056', '069', '030', '096', '263', '062', '002', '070', '216',
+          '167', '117', '159', '212', '059', '007', '073', '064', '219', '326', '060', '202', '322',
+          '183', '063', '260', '325', '028', '074']
+    img_paths = []
+    for id in ids:
+        img = glob.glob(osp.join('/home/yhl/data/prcc/rgb/gallery', id + '*.jpg'))
+        img_paths.append(random.choice(img))
+    pid_container = set()
+
+    for img_path in img_paths:
+        pid = int(img_path.split("/")[-1][:3])
+        if pid == -1: continue  # junk images are just ignored
+        pid_container.add(pid)
+
+    gallery = []
+    for img_path in img_paths:
+        pid = int(img_path.split("/")[-1][:3])
+        camid = img_path.split("/")[-1][4]
+        gallery.append((img_path, pid, camid))
+
+    img_paths = glob.glob(osp.join('/home/yhl/data/prcc/rgb/queryc', '*.jpg'))
+    pid_container = set()
+
+    for img_path in img_paths:
+        pid = int(img_path.split("/")[-1][:3])
+        if pid == -1: continue  # junk images are just ignored
+        pid_container.add(pid)
+
+    query = []
+    for img_path in img_paths:
+        pid = int(img_path.split("/")[-1][:3])
+        camid = img_path.split("/")[-1][4]
+        query.append((img_path, pid, camid))
+
+    val_set = ImageDataset(query + gallery, val_transforms)
+
+    val_loader = DataLoader(
+        val_set, batch_size=cfg.TEST.IMS_PER_BATCH, shuffle=False, num_workers=num_workers,
+        collate_fn=val_collate_fn
+    )
+    return val_loader, len(query)
