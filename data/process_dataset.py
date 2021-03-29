@@ -23,10 +23,15 @@ def process_prcc(path):
 
 
 def process():
-    img_paths = glob.glob(os.path.join(dataset_dir, "query", "*.jpg"))
+    img_paths = glob.glob(os.path.join(dataset_dir, "gallery", "*.jpg"))
+    lists = []
     for img in img_paths:
-        if img.find("B") != -1:
-            shutil.move(img, os.path.join(dataset_dir, "queryb"))
+        lists.append(img.split("/")[-1][:3])
+    lists = list(set(lists))
+    print(lists)
+    print(len(lists))
+        # if img.find("B") != -1:
+        #     shutil.move(img, os.path.join(dataset_dir, "queryb"))
         # else:
         #     shutil.move(img, os.path.join(dataset_dir, "query"))
 
@@ -34,4 +39,4 @@ def process():
 # process_prcc("val")
 # process_prcc("test")
 
-process()
+# process()

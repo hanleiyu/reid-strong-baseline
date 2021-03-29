@@ -79,4 +79,3 @@ def make_data_loader_part(cfg):
         collate_fn=part_val_collate_fn
     )
     return train_loader, val_loader, len(dataset.query), num_classes
-

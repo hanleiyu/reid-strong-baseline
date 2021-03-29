@@ -3,6 +3,7 @@
 import glob
 import numpy as np
 import torch
+import random
 import os.path as osp
 
 from .bases import BaseImageDataset
@@ -59,7 +60,20 @@ class PRCC(BaseImageDataset):
         #     kps = torch.load('/home/yhl/data/VC/partb/maskg.pt')
         # elif dir_path.find("query") != -1:
         #     kps = torch.load('/home/yhl/data/VC/partb/maskq.pt')
-        img_paths = glob.glob(osp.join(dir_path, '*.jpg'))
+        if dir_path.find("gallery") != -1:
+            ids = ['188', '005', '091', '309', '075', '162', '182', '223', '061', '006', '321', '324', '057',
+                   '279', '156', '328', '152', '282', '118', '004', '099', '319', '257', '008', '272', '214',
+                   '058', '146', '112', '230', '094', '186', '323', '120', '242', '071', '320', '264', '265',
+                   '001', '072', '097', '018', '056', '069', '030', '096', '263', '062', '002', '070', '216',
+                   '167', '117', '159', '212', '059', '007', '073', '064', '219', '326', '060', '202', '322',
+                   '183', '063', '260', '325', '028', '074']
+            random.seed(0)
+            img_paths = []
+            for id in ids:
+                img = glob.glob(osp.join(dir_path, id + '*.jpg'))
+                img_paths.append(random.choice(img))
+        else:
+            img_paths = glob.glob(osp.join(dir_path, '*.jpg'))
 
         pid_container = set()
         for img_path in img_paths:

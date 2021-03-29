@@ -520,3 +520,4 @@ def do_train_with_center(
                 logger.info("CMC curve, Rank-{:<3}:{:.1%}".format(r, cmc[r - 1]))
 
     trainer.run(train_loader, max_epochs=epochs)
+
