@@ -54,8 +54,8 @@ class PRCC(BaseImageDataset):
             raise RuntimeError("'{}' is not available".format(self.gallery_dir))
 
     def _process_dir(self, dir_path, relabel=False):
-        # if dir_path.find("train") != -1:
-        #     kps = torch.load('/home/yhl/data/VC/partb/maskt.pt')
+        if dir_path.find("train") != -1:
+            kps = torch.load('/home/yhl/data/prcc/rgb/partb/maskt.pt')
         # elif dir_path.find("gallery") != -1:
         #     kps = torch.load('/home/yhl/data/VC/partb/maskg.pt')
         # elif dir_path.find("query") != -1:
@@ -83,11 +83,15 @@ class PRCC(BaseImageDataset):
         pid2label = {pid: label for label, pid in enumerate(pid_container)}
 
         dataset = []
+
         for img_path in img_paths:
             pid = int(img_path.split("/")[-1][:3])
             camid = img_path.split("/")[-1][4]
-            # mask = kps[img_path[-17:-4]]
             if relabel: pid = pid2label[pid]
-            dataset.append((img_path, pid, camid))
+            if dir_path.find("train") != -1:
+                mask = kps[img_path.split("/")[-1][:-4]]
+            else:
+                mask = ""
+            dataset.append((img_path, pid, camid, mask))
 
         return dataset

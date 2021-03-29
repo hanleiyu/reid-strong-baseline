@@ -264,19 +264,19 @@ def cal_kp(path):
     json_paths = glob.glob(osp.join(data_path, 'kp', path, '*.json'))
     for p in json_paths:
         img = p.split("/")[-1][:-15]
-        m1, c1 = cal_mask(p, 1, 8)
-        m2, c2 = cal_mask(p, 2, 5)
+        # m1, c1 = cal_mask(p, 1, 8)
+        # m2, c2 = cal_mask(p, 2, 5)
         # m3, c3 = cal_mask(p, 8, 10)
         # m4, c4 = cal_mask(p, 8, 13)
-        m5, c5 = cal_mask(p, "leg")
-        m6, c6 = cal_mask(p, "thigh")
-        m7, c7 = cal_mask(p, "arm")
-        m8, c8 = cal_mask(p, "hand")
-        m9, c9 = cal_mask(p, "face")
-        # m10, c10 = cal_mask(p, "body")
-        mask = torch.stack((m1, m2, m5, m6, m7, m8, m9), 0)
-        c = [c1, c2, c5, c6, c7, m8, m9]
-        # mask = torch.unsqueeze(m10, 0)
+        # m5, c5 = cal_mask(p, "leg")
+        # m6, c6 = cal_mask(p, "thigh")
+        # m7, c7 = cal_mask(p, "arm")
+        # m8, c8 = cal_mask(p, "hand")
+        # m9, c9 = cal_mask(p, "face")
+        m10, c10 = cal_mask(p, "body")
+        # mask = torch.stack((m9, m10), 0)
+        # c = [c1, c2, c5, c6, c7, m8]
+        mask = torch.unsqueeze(m10, 0)
         dictionary.update({img: mask})
         # dictionary.update({img: {"mask":mask, "confidence":c}})
     return dictionary
@@ -286,7 +286,7 @@ def save_kp():
     maskt = cal_kp("train")
     # maskg = cal_kp("gallery")
     # maskq = cal_kp("query")
-    torch.save(maskt, osp.join(data_path, 'part7n/maskt.pt'))
+    torch.save(maskt, osp.join(data_path, 'partb/maskt.pt'))
     # torch.save(maskg, osp.join(data_path, 'part7nc/maskg.pt'))
     # torch.save(maskq, osp.join(data_path, 'part7nc/maskq.pt'))
 
