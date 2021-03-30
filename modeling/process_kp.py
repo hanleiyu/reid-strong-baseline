@@ -46,6 +46,16 @@ def resize_kp(a, b, name):
         with open(json_path, 'rb') as f:
             write_json_data(json_path, resize_json_data(json_path, h, w))
 
+def expand_kp(name):
+    json_paths = glob.glob(osp.join(data_path, 'kp', name, '*.json'))
+    for path in json_paths:
+        with open(path, 'rb') as f:
+            pose = json.load(f)
+            for i in range(0, 25):
+                pose[3 * i] *= 16
+                pose[3 * i + 1] *= 16
+        f.close()
+
 
 def remove(name):
     json_paths = glob.glob(osp.join(data_path, 'kp', name, '*.json'))
@@ -292,9 +302,9 @@ def save_kp():
 
 
 data_path = "/home/yhl/data/prcc/rgb"
-save_kp()
+# save_kp()
 
-# resize_kp(8, 16, "train")
+# resize_kp(128, 256, "train")
 # resize_kp(8, 16, "val")
 # resize_kp(8, 16, "test")
 # os.remove("/home/yhl/data/prcc/rgb/kp/train/170_B_cropped_rgb561_keypoints.json")
