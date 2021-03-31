@@ -183,7 +183,7 @@ class Baseline(nn.Module):
 class Part(nn.Module):
     in_planes = 2048
 
-    def __init__(self, num_classes, last_stride, model_path, neck, neck_feat, model_name, pretrain_choice):
+    def __init__(self, num_classes, last_stride, model_path, neck, neck_feat, model_name, pretrain_choice, resize):
         super(Part, self).__init__()
         if model_name == 'resnet18':
             self.in_planes = 512
@@ -282,6 +282,7 @@ class Part(nn.Module):
         self.num_classes = num_classes
         self.neck = neck
         self.neck_feat = neck_feat
+        self.resize = resize
 
         if self.neck == 'no':
             self.classifier = nn.Linear(self.in_planes, self.num_classes)
@@ -301,8 +302,14 @@ class Part(nn.Module):
             # global_feat = nn.functional.interpolate(global_feat, scale_factor=16, mode='nearest')
             num = len(list(mask[0, :, 0, 0, 0]))
             feats = [torch.zeros(128, 2048) for _ in range(num + 1)]
-            for i in range(num):
-                feats[i] = self.feat_process(global_feat, mask[:, i, :, :, :])
+            if self.resize == "on":
+                for i in range(num):
+                    feats[i] = self.feat_process(global_feat, mask[:, i, :, :, :])
+            # else:
+                # for i in range(num):
+                    # ...
+                    # feats[i] = self.feat_process_origin(, mask[:, i, :, :, :])
+
             global_feat = self.gap(global_feat)  # (b, 2048, 1, 1)
             global_feat = global_feat.view(global_feat.shape[0], -1)  # flatten to (bs, 2048)
             feat = self.bottleneck(global_feat)
@@ -312,6 +319,7 @@ class Part(nn.Module):
                 score[i] = self.classifier(feats[i])
             score[num] = self.classifier(feat)
             return score, feats  # global feature for triplet loss
+
         else:
             global_feat = self.base(x)
             global_feat = self.gap(global_feat)  # (b, 2048, 1, 1)

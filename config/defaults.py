@@ -44,6 +44,7 @@ _C.MODEL.METRIC_LOSS_TYPE = 'triplet'
 _C.MODEL.IF_LABELSMOOTH = 'on'
 
 _C.MODEL.IF_UNCENTAINTY = 'off'
+_C.MODEL.IF_RESIZE = 'off'
 # -----------------------------------------------------------------------------
 # INPUT
 # -----------------------------------------------------------------------------

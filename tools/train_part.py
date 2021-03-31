@@ -41,7 +41,9 @@ def train(cfg):
 
     if cfg.MODEL.IF_UNCENTAINTY == 'on':
         log_var = torch.zeros((cfg.INPUT.PART + 1), requires_grad=True)
-    optimizer = make_optimizer(cfg, model, log_var)
+        optimizer = make_optimizer(cfg, model, log_var)
+    else:
+        optimizer = make_optimizer(cfg, model)
     # scheduler = WarmupMultiStepLR(optimizer, cfg.SOLVER.STEPS, cfg.SOLVER.GAMMA, cfg.SOLVER.WARMUP_FACTOR,
     #                               cfg.SOLVER.WARMUP_ITERS, cfg.SOLVER.WARMUP_METHOD)
 
@@ -65,19 +67,31 @@ def train(cfg):
         print('Only support pretrain_choice for imagenet and self, but got {}'.format(cfg.MODEL.PRETRAIN_CHOICE))
 
     arguments = {}
-
-    do_train_part(
-        cfg,
-        model,
-        train_loader,
-        val_loader,
-        optimizer,
-        scheduler,      # modify for using self trained model
-        loss_func,
-        num_query,
-        start_epoch,     # add for using self trained model
-        log_var
-    )
+    if cfg.MODEL.IF_UNCENTAINTY == 'on':
+        do_train_part(
+            cfg,
+            model,
+            train_loader,
+            val_loader,
+            optimizer,
+            scheduler,      # modify for using self trained model
+            loss_func,
+            num_query,
+            start_epoch,     # add for using self trained model
+            log_var
+        )
+    else:
+        do_train_part(
+            cfg,
+            model,
+            train_loader,
+            val_loader,
+            optimizer,
+            scheduler,      # modify for using self trained model
+            loss_func,
+            num_query,
+            start_epoch    # add for using self trained model
+        )
 
 
 def main():
