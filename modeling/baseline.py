@@ -322,20 +322,27 @@ class Part(nn.Module):
 
         else:
             global_feat = self.base(x)
-            global_feat = self.gap(global_feat)  # (b, 2048, 1, 1)
-            global_feat = global_feat.view(global_feat.shape[0], -1)  # flatten to (bs, 2048)
-
-            if self.neck == 'no':
-                feat = global_feat
-            elif self.neck == 'bnneck':
-                feat = self.bottleneck(global_feat)
-
-            if self.neck_feat == 'after':
-                # print("Test with feature after BN")
-                return feat
-            else:
-                # print("Test with feature before BN")
-                return global_feat
+            body_feat = torch.mul(global_feat, mask[:, 0, :, :, :].cuda())
+            body_feat = body_feat.mean(2, False)
+            body_feat = body_feat.mean(2, False)
+            return body_feat
+            # global_feat = self.gap(global_feat)  # (b, 2048, 1, 1)
+            # global_feat = global_feat.view(global_feat.shape[0], -1)  # flatten to (bs, 2048)
+            #
+            # if self.neck == 'no':
+            #     # feat = global_feat
+            #     feat = body_feat
+            # elif self.neck == 'bnneck':
+            #     # feat = self.bottleneck(global_feat)
+            #     feat = self.bottleneck(body_feat)
+            #
+            # if self.neck_feat == 'after':
+            #     # print("Test with feature after BN")
+            #     return feat
+            # else:
+            #     # print("Test with feature before BN")
+            #     # return global_feat
+            #     return body_feat
 
     def load_param(self, trained_path):
         param_dict = torch.load(trained_path).state_dict()

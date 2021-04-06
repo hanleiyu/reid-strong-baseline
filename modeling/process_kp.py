@@ -46,16 +46,6 @@ def resize_kp(a, b, name):
         with open(json_path, 'rb') as f:
             write_json_data(json_path, resize_json_data(json_path, h, w))
 
-def expand_kp(name):
-    json_paths = glob.glob(osp.join(data_path, 'kp', name, '*.json'))
-    for path in json_paths:
-        with open(path, 'rb') as f:
-            pose = json.load(f)
-            for i in range(0, 25):
-                pose[3 * i] *= 16
-                pose[3 * i + 1] *= 16
-        f.close()
-
 
 def remove(name):
     json_paths = glob.glob(osp.join(data_path, 'kp', name, '*.json'))
@@ -209,12 +199,11 @@ def dda_line_points(pt1, pt2):
     return line
 
 
-
 def cal_mask(p, a, b=0):
     pt3 = []
     pt4 = []
     m = torch.zeros(size=(16, 8))
-    if a != "face" and a != "body":
+    if a != "face" and a != "body" and a != "people":
         if a == "leg":
             pt1, pt2, pt3, pt4, c = get_part_data(p, "leg")
         elif a == "thigh":
@@ -249,7 +238,7 @@ def cal_mask(p, a, b=0):
                 c = params[3*1+2]
             for i in range(t+1):
                 m[:][i] = 1
-    elif a == "body":
+    elif a == "body" or a == "people":
         pt1, pt2, pt3, pt4, c1 = get_part_data(p, "leg")
         line = dda_line_points(pt1, pt2) + dda_line_points(pt3, pt4)
         pt1, pt2, pt3, pt4, c2 = get_thigh_data(p)
@@ -265,6 +254,15 @@ def cal_mask(p, a, b=0):
         for i in range(len(line)):
             if line[i][0] <= 7 and line[i][1] <= 15:
                 m[line[i][1]][line[i][0]] = 1
+        if a == "people":
+            with open(p, 'rb') as f:
+                params = json.load(f)
+                if len(params) > 0:
+                    t = params[3 * 1]
+                    c = params[3 * 1 + 2]
+                for i in range(t + 1):
+                    m[:][i] = 1
+
     mask = torch.unsqueeze(m, 0)
     return mask, c
 
@@ -283,26 +281,27 @@ def cal_kp(path):
         # m7, c7 = cal_mask(p, "arm")
         # m8, c8 = cal_mask(p, "hand")
         # m9, c9 = cal_mask(p, "face")
-        m10, c10 = cal_mask(p, "body")
+        # m10, c10 = cal_mask(p, "body")
+        m11, c10 = cal_mask(p, "people")
         # mask = torch.stack((m9, m10), 0)
         # c = [c1, c2, c5, c6, c7, m8]
-        mask = torch.unsqueeze(m10, 0)
+        mask = torch.unsqueeze(m11, 0)
         dictionary.update({img: mask})
         # dictionary.update({img: {"mask":mask, "confidence":c}})
     return dictionary
 
 
 def save_kp():
-    maskt = cal_kp("train")
-    # maskg = cal_kp("gallery")
-    # maskq = cal_kp("query")
-    torch.save(maskt, osp.join(data_path, 'partb/maskt.pt'))
-    # torch.save(maskg, osp.join(data_path, 'part7nc/maskg.pt'))
-    # torch.save(maskq, osp.join(data_path, 'part7nc/maskq.pt'))
+    # maskt = cal_kp("train")
+    maskg = cal_kp("gallery")
+    maskq = cal_kp("queryc")
+    # torch.save(maskt, osp.join(data_path, 'partb/maskt.pt'))
+    torch.save(maskg, osp.join(data_path, 'people/maskg.pt'))
+    torch.save(maskq, osp.join(data_path, 'people/maskq.pt'))
 
 
 data_path = "/home/yhl/data/prcc/rgb"
-# save_kp()
+save_kp()
 
 # resize_kp(128, 256, "train")
 # resize_kp(8, 16, "val")
@@ -311,8 +310,8 @@ data_path = "/home/yhl/data/prcc/rgb"
 # os.remove("/home/yhl/data/VC/train/0338-04-03-08.jpg")
 
 # remove("train")
-# remove("val", 0.25)
-# remove("test", 0.25)
+# remove("gallery")
+# remove("queryc")
 
 # json_paths = glob.glob(osp.join(data_path, 'kp', "train", '*.json'))
 # for p in json_paths:

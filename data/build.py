@@ -13,6 +13,7 @@ from .transforms import build_transforms
 import random
 import glob
 import os.path as osp
+import torch
 
 def make_data_loader(cfg):
     train_transforms = build_transforms(cfg, is_train=True)
@@ -106,10 +107,12 @@ def make_data_loader_prcc(cfg, trial=0):
         pid_container.add(pid)
 
     gallery = []
+    kps = torch.load('/home/yhl/data/prcc/rgb/people/maskg.pt')
     for img_path in img_paths:
         pid = int(img_path.split("/")[-1][:3])
         camid = img_path.split("/")[-1][4]
-        gallery.append((img_path, pid, camid))
+        mask = kps[img_path.split("/")[-1][:-4]]
+        gallery.append((img_path, pid, camid, mask))
 
     img_paths = glob.glob(osp.join('/home/yhl/data/prcc/rgb/queryc', '*.jpg'))
     pid_container = set()
@@ -120,15 +123,17 @@ def make_data_loader_prcc(cfg, trial=0):
         pid_container.add(pid)
 
     query = []
+    kps = torch.load('/home/yhl/data/prcc/rgb/people/maskq.pt')
     for img_path in img_paths:
         pid = int(img_path.split("/")[-1][:3])
         camid = img_path.split("/")[-1][4]
-        query.append((img_path, pid, camid))
+        mask = kps[img_path.split("/")[-1][:-4]]
+        query.append((img_path, pid, camid, mask))
 
-    val_set = ImageDataset(query + gallery, val_transforms)
+    val_set = ImageDatasetPart(query + gallery, val_transforms)
 
     val_loader = DataLoader(
         val_set, batch_size=cfg.TEST.IMS_PER_BATCH, shuffle=False, num_workers=num_workers,
-        collate_fn=val_collate_fn
+        collate_fn=part_train_collate_fn
     )
     return val_loader, len(query)

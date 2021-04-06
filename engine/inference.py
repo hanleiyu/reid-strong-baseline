@@ -98,9 +98,9 @@ def part_evaluator(model, metrics,
     def _inference(engine, batch):
         model.eval()
         with torch.no_grad():
-            data, pids, camids = batch
+            data, pids, camids, mask = batch
             data = data.to(device) if torch.cuda.device_count() >= 1 else data
-            feat = model(data, "")
+            feat = model(data, mask)
             return feat, pids, camids
 
     engine = Engine(_inference)
@@ -154,12 +154,12 @@ def prcc_inference(
     logger.info("Enter inferencing")
     if cfg.TEST.RE_RANKING == 'no':
         print("Create evaluator")
-        evaluator = create_supervised_evaluator(model, metrics={
+        evaluator = part_evaluator(model, metrics={
             'r1_mAP': R1_mAP(num_query, max_rank=50, feat_norm=cfg.TEST.FEAT_NORM)},
                                                 device=device)
     elif cfg.TEST.RE_RANKING == 'yes':
         print("Create evaluator for reranking")
-        evaluator = create_supervised_evaluator(model, metrics={
+        evaluator = part_evaluator(model, metrics={
             'r1_mAP': R1_mAP_reranking(num_query, max_rank=50, feat_norm=cfg.TEST.FEAT_NORM)},
                                                 device=device)
     else:
