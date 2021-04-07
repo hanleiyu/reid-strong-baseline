@@ -8,6 +8,7 @@ import os
 import math
 import numpy as np
 import torch
+import cv2
 
 
 def resize_json_data(path, h, w):
@@ -88,6 +89,7 @@ def get_json_data(path, n1, n2):
     c = 0
     with open(path, 'rb') as f:
         params = json.load(f)
+        # params = params['people'][0]['pose_keypoints_2d']
         if len(params) > 0:
             t1 = [params[3 * n1], params[3 * n1 + 1]]
             t2 = [params[3 * n2], params[3 * n2 + 1]]
@@ -113,10 +115,11 @@ def get_part_data(path, name):
         n2 = 5
     elif name == "hand":
         n1 = 3
-        n2 = 7
+        n2 = 6
 
     with open(path, 'rb') as f:
         params = json.load(f)
+        # params = params['people'][0]['pose_keypoints_2d']
         if len(params) > 0:
             if params[3 * n1 + 2] != 0 and params[3 * (n1 + 1) + 2] != 0:
                 t1 = [params[3 * n1], params[3 * n1 + 1]]
@@ -148,6 +151,7 @@ def get_thigh_data(path):
     c2 = 0
     with open(path, 'rb') as f:
         params = json.load(f)
+        params = params['people'][0]['pose_keypoints_2d']
         if len(params) > 0:
             if params[3 * 8 + 2] != 0 and params[3 * 10 + 2] != 0:
                 t1 = [params[3 * 8], params[3 * 8 + 1]]
@@ -183,7 +187,7 @@ def dda_line_points(pt1, pt2):
         else:
             steps = abs(dy)
 
-        if steps == 0 :
+        if steps == 0:
             return [pt1, pt2]
         else:
             xinc = dx / steps
@@ -191,7 +195,7 @@ def dda_line_points(pt1, pt2):
             x = x1
             y = y1
 
-        for k in range(steps + 1):
+        for k in range(int(steps) + 1):
                 line.append([math.floor(x + 0.5), math.floor(y + 0.5)])
                 x += xinc
                 y += yinc
@@ -276,32 +280,34 @@ def cal_kp(path):
         # m2, c2 = cal_mask(p, 2, 5)
         # m3, c3 = cal_mask(p, 8, 10)
         # m4, c4 = cal_mask(p, 8, 13)
-        # m5, c5 = cal_mask(p, "leg")
+        m5, c5 = cal_mask(p, "leg")
         # m6, c6 = cal_mask(p, "thigh")
-        # m7, c7 = cal_mask(p, "arm")
-        # m8, c8 = cal_mask(p, "hand")
-        # m9, c9 = cal_mask(p, "face")
+        m7, c7 = cal_mask(p, "arm")
+        m8, c8 = cal_mask(p, "hand")
+        m9, c9 = cal_mask(p, "face")
         # m10, c10 = cal_mask(p, "body")
-        m11, c10 = cal_mask(p, "people")
-        # mask = torch.stack((m9, m10), 0)
+        # m11, c10 = cal_mask(p, "people")
+        mask = torch.stack((m5, m7, m8, m9), 0)
         # c = [c1, c2, c5, c6, c7, m8]
-        mask = torch.unsqueeze(m11, 0)
+        # mask = torch.unsqueeze(m11, 0)
         dictionary.update({img: mask})
         # dictionary.update({img: {"mask":mask, "confidence":c}})
     return dictionary
 
 
 def save_kp():
-    # maskt = cal_kp("train")
+    maskt = cal_kp("train")
     maskg = cal_kp("gallery")
     maskq = cal_kp("queryc")
-    # torch.save(maskt, osp.join(data_path, 'partb/maskt.pt'))
-    torch.save(maskg, osp.join(data_path, 'people/maskg.pt'))
-    torch.save(maskq, osp.join(data_path, 'people/maskq.pt'))
+    torch.save(maskt, osp.join(data_path, 'part4n/maskt.pt'))
+    torch.save(maskg, osp.join(data_path, 'part4n/maskg.pt'))
+    torch.save(maskq, osp.join(data_path, 'part4n/maskq.pt'))
 
 
 data_path = "/home/yhl/data/prcc/rgb"
 save_kp()
+
+
 
 # resize_kp(128, 256, "train")
 # resize_kp(8, 16, "val")
@@ -352,8 +358,89 @@ save_kp()
 #         #             num[i] += 1
 #         # else:
 #         #     print(p)
-#             if (params[3 * 10 + 2] == 0 or params[3 * 11 + 2] == 0) and (params[3 * 13 + 2] == 0 or params[3 * 14 + 2] == 0):
+#             if (params[3 * 10 + 2] == 0 or params[3 * 11 + 2] == 0)
+#             and (params[3 * 13 + 2] == 0 or params[3 * 14 + 2] == 0):
 #                 print(p)
 #                 os.remove(p)
 #                 num += 1
 # print(num)
+
+def crop(path):
+    img_paths = glob.glob(os.path.join(data_path, path + "crop", "*.jpg"))
+    for img in img_paths:
+        image = cv2.imread(img)
+        m = np.zeros((image.shape[0], image.shape[1]))
+
+        p = os.path.join(data_path, "kpo/test", img.split("/")[-1][:-4] + '_keypoints.json')
+        pt1, pt2, _ = get_json_data(p, 1, 8)
+        pt3, pt4, _ = get_json_data(p, 2, 5)
+        for j in range(image.shape[0]):
+            for i in range(image.shape[1]):
+                if (pt3[0] < i < pt4[0] or pt4[0] < i < pt3[0]) and pt1[1] < j < pt2[1]:
+                    m[j][i] = 1
+        image[m > 0] = 0
+        cv2.imwrite(img, image)
+
+
+# crop("queryc")
+# crop("gallery")
+# crop("train")
+
+def cropnew(path):
+    img_paths = glob.glob(os.path.join(data_path, path, "*.jpg"))
+    for img in img_paths:
+        image = cv2.imread(img)
+        m = np.zeros((image.shape[0], image.shape[1]))
+
+        p = os.path.join(data_path, "kpo/train", img.split("/")[-1][:-4] + '_keypoints.json')
+        pt1, pt2, _ = get_json_data(p, 1, 8)
+        pt3, pt4, _ = get_json_data(p, 2, 5)
+        upmin = min(pt4[0], pt3[0])
+        upmax = max(pt4[0], pt3[0])
+        pt5, pt6, _, pt7, _ = get_thigh_data(p)
+        if len(pt5) > 0 and len(pt6) > 0 and len(pt7) > 0:
+            downleft = min(pt5[0], pt6[0], pt7[0])
+            downright = max(pt5[0], pt6[0], pt7[0])
+            downmax = max(pt6[1], pt7[1])
+        elif len(pt5) == 0 or (len(pt6) == 0 and len(pt7) == 0):
+            downleft = 0
+            downright = 0
+            downmax = 0
+        elif len(pt6) > 0:
+            downleft = min(pt5[0], pt6[0])
+            downright = max(pt5[0], pt6[0])
+            downmax = pt6[1]
+        elif len(pt7) > 0:
+            downleft = min(pt5[0], pt7[0])
+            downright = max(pt5[0], pt7[0])
+            downmax = pt7[1]
+
+
+        for j in range(image.shape[0]):
+            for i in range(image.shape[1]):
+                if upmin < i < upmax and pt1[1] < j < pt2[1]:
+                    m[j][i] = 1
+                if downleft < i < downright and pt5[1] < j < downmax:
+                    m[j][i] = 1
+
+        pt1, pt2, pt3, pt4, c1 = get_part_data(p, "leg")
+        line = dda_line_points(pt1, pt2) + dda_line_points(pt3, pt4)
+        pt1, pt2, pt3, pt4, c4 = get_part_data(p, "hand")
+        line += dda_line_points(pt1, pt2) + dda_line_points(pt3, pt4)
+        pt1, pt2, pt3, pt4, c3 = get_part_data(p, "arm")
+        line += dda_line_points(pt1, pt2) + dda_line_points(pt3, pt4)
+        weight = min((downright - downleft), (upmax - upmin)) / 2
+        for i in range(len(line)):
+            for j in range(int(weight)):
+                if line[i][0] + j in range(image.shape[1]) and line[i][1] in range(image.shape[0]):
+                    m[line[i][1]][line[i][0] + j] = 0
+                if line[i][0] - j in range(image.shape[1]) and line[i][1] in range(image.shape[0]):
+                    m[line[i][1]][line[i][0] - j] = 0
+
+        image[m > 0] = 0
+        cv2.imwrite(os.path.join(data_path, path+"crop3", img.split("/")[-1]), image)
+
+# cropnew("queryc")
+# cropnew("gallery")
+# cropnew("train")
+

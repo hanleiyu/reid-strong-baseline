@@ -57,10 +57,12 @@ class ImageDatasetPart(Dataset):
 
     def __getitem__(self, index):
         img_path, pid, camid, mask = self.dataset[index]
+        # img_path, pid, camid = self.dataset[index]
         img = read_image(img_path)
 
         if self.transform is not None:
             img = self.transform(img)
 
         return img, pid, camid, img_path, mask
+        # return img, pid, camid, img_path
 

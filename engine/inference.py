@@ -98,9 +98,11 @@ def part_evaluator(model, metrics,
     def _inference(engine, batch):
         model.eval()
         with torch.no_grad():
-            data, pids, camids, mask = batch
+            # data, pids, camids, mask = batch
+            data, pids, camids = batch
             data = data.to(device) if torch.cuda.device_count() >= 1 else data
-            feat = model(data, mask)
+            # feat = model(data, mask)
+            feat = model(data)
             return feat, pids, camids
 
     engine = Engine(_inference)

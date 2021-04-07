@@ -23,6 +23,9 @@ class PRCC(BaseImageDataset):
         self.train_dir = osp.join(self.dataset_dir, 'train')
         self.query_dir = osp.join(self.dataset_dir, 'queryc')
         self.gallery_dir = osp.join(self.dataset_dir, 'gallery')
+        # self.train_dir = osp.join(self.dataset_dir, 'traincrop3')
+        # self.query_dir = osp.join(self.dataset_dir, 'queryccrop')
+        # self.gallery_dir = osp.join(self.dataset_dir, 'gallerycrop')
 
         self._check_before_run()
 
@@ -55,7 +58,7 @@ class PRCC(BaseImageDataset):
 
     def _process_dir(self, dir_path, relabel=False):
         if dir_path.find("train") != -1:
-            kps = torch.load('/home/yhl/data/prcc/rgb/partb/maskt.pt')
+            kps = torch.load('/home/yhl/data/prcc/rgb/part4n/maskt.pt')
         # elif dir_path.find("gallery") != -1:
         #     kps = torch.load('/home/yhl/data/prcc/rgb/partb/maskg.pt')
         # elif dir_path.find("query") != -1:
@@ -93,5 +96,6 @@ class PRCC(BaseImageDataset):
             else:
                 mask = ""
             dataset.append((img_path, pid, camid, mask))
+            # dataset.append((img_path, pid, camid))
 
         return dataset

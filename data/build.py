@@ -97,7 +97,7 @@ def make_data_loader_prcc(cfg, trial=0):
           '183', '063', '260', '325', '028', '074']
     img_paths = []
     for id in ids:
-        img = glob.glob(osp.join('/home/yhl/data/prcc/rgb/gallery', id + '*.jpg'))
+        img = glob.glob(osp.join('/home/yhl/data/prcc/rgb/gallerycrop', id + '*.jpg'))
         img_paths.append(random.choice(img))
     pid_container = set()
 
@@ -107,14 +107,15 @@ def make_data_loader_prcc(cfg, trial=0):
         pid_container.add(pid)
 
     gallery = []
-    kps = torch.load('/home/yhl/data/prcc/rgb/people/maskg.pt')
+    # kps = torch.load('/home/yhl/data/prcc/rgb/people/maskg.pt')
     for img_path in img_paths:
         pid = int(img_path.split("/")[-1][:3])
         camid = img_path.split("/")[-1][4]
-        mask = kps[img_path.split("/")[-1][:-4]]
-        gallery.append((img_path, pid, camid, mask))
+        # mask = kps[img_path.split("/")[-1][:-4]]
+        # gallery.append((img_path, pid, camid, mask))
+        gallery.append((img_path, pid, camid))
 
-    img_paths = glob.glob(osp.join('/home/yhl/data/prcc/rgb/queryc', '*.jpg'))
+    img_paths = glob.glob(osp.join('/home/yhl/data/prcc/rgb/queryccrop', '*.jpg'))
     pid_container = set()
 
     for img_path in img_paths:
@@ -123,17 +124,18 @@ def make_data_loader_prcc(cfg, trial=0):
         pid_container.add(pid)
 
     query = []
-    kps = torch.load('/home/yhl/data/prcc/rgb/people/maskq.pt')
+    # kps = torch.load('/home/yhl/data/prcc/rgb/people/maskq.pt')
     for img_path in img_paths:
         pid = int(img_path.split("/")[-1][:3])
         camid = img_path.split("/")[-1][4]
-        mask = kps[img_path.split("/")[-1][:-4]]
-        query.append((img_path, pid, camid, mask))
+        # mask = kps[img_path.split("/")[-1][:-4]]
+        # query.append((img_path, pid, camid, mask))
+        query.append((img_path, pid, camid))
 
     val_set = ImageDatasetPart(query + gallery, val_transforms)
 
     val_loader = DataLoader(
         val_set, batch_size=cfg.TEST.IMS_PER_BATCH, shuffle=False, num_workers=num_workers,
-        collate_fn=part_train_collate_fn
+        collate_fn=val_collate_fn
     )
     return val_loader, len(query)

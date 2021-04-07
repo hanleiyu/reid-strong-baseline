@@ -1,6 +1,7 @@
 import glob
 import os
 import shutil
+import cv2
 
 dataset_dir = '/home/yhl/data/prcc/rgb'
 dataset_dirn = '/home/yhl/data/prcc/a'
@@ -21,22 +22,20 @@ def process_prcc(path):
             os.rename(img, new_name)
             shutil.move(new_name, os.path.join(dataset_dirn, path))
 
-
-def process():
-    img_paths = glob.glob(os.path.join(dataset_dir, "gallery", "*.jpg"))
-    lists = []
-    for img in img_paths:
-        lists.append(img.split("/")[-1][:3])
-    lists = list(set(lists))
-    print(lists)
-    print(len(lists))
-        # if img.find("B") != -1:
-        #     shutil.move(img, os.path.join(dataset_dir, "queryb"))
-        # else:
-        #     shutil.move(img, os.path.join(dataset_dir, "query"))
-
 # process_prcc("train")
 # process_prcc("val")
 # process_prcc("test")
 
-# process()
+
+def grey(path):
+    img_paths = glob.glob(os.path.join(dataset_dir, path, "*.jpg"))
+    for img in img_paths:
+        img_grey = cv2.imread(img)
+        img_grey = cv2.cvtColor(img_grey, cv2.COLOR_RGB2GRAY)
+        cv2.imwrite(img, img_grey)
+
+
+# grey("traingrey")
+# grey("gallerygrey")
+# grey("querycgrey")
+
