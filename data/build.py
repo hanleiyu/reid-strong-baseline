@@ -97,7 +97,7 @@ def make_data_loader_prcc(cfg, trial=0):
           '183', '063', '260', '325', '028', '074']
     img_paths = []
     for id in ids:
-        img = glob.glob(osp.join('/home/yhl/data/prcc/rgb/gallerycrop', id + '*.jpg'))
+        img = glob.glob(osp.join('/home/yhl/data/prcc/rgb/gallery', id + '*.jpg'))
         img_paths.append(random.choice(img))
     pid_container = set()
 
@@ -115,7 +115,7 @@ def make_data_loader_prcc(cfg, trial=0):
         # gallery.append((img_path, pid, camid, mask))
         gallery.append((img_path, pid, camid))
 
-    img_paths = glob.glob(osp.join('/home/yhl/data/prcc/rgb/queryccrop', '*.jpg'))
+    img_paths = glob.glob(osp.join('/home/yhl/data/prcc/rgb/queryc', '*.jpg'))
     pid_container = set()
 
     for img_path in img_paths:

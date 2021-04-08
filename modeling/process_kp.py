@@ -89,7 +89,7 @@ def get_json_data(path, n1, n2):
     c = 0
     with open(path, 'rb') as f:
         params = json.load(f)
-        # params = params['people'][0]['pose_keypoints_2d']
+        params = params['people'][0]['pose_keypoints_2d']
         if len(params) > 0:
             t1 = [params[3 * n1], params[3 * n1 + 1]]
             t2 = [params[3 * n2], params[3 * n2 + 1]]
@@ -119,7 +119,7 @@ def get_part_data(path, name):
 
     with open(path, 'rb') as f:
         params = json.load(f)
-        # params = params['people'][0]['pose_keypoints_2d']
+        params = params['people'][0]['pose_keypoints_2d']
         if len(params) > 0:
             if params[3 * n1 + 2] != 0 and params[3 * (n1 + 1) + 2] != 0:
                 t1 = [params[3 * n1], params[3 * n1 + 1]]
@@ -305,7 +305,7 @@ def save_kp():
 
 
 data_path = "/home/yhl/data/prcc/rgb"
-save_kp()
+# save_kp()
 
 
 
@@ -366,20 +366,20 @@ save_kp()
 # print(num)
 
 def crop(path):
-    img_paths = glob.glob(os.path.join(data_path, path + "crop", "*.jpg"))
+    img_paths = glob.glob(os.path.join(data_path, path, "*.jpg"))
     for img in img_paths:
         image = cv2.imread(img)
         m = np.zeros((image.shape[0], image.shape[1]))
 
-        p = os.path.join(data_path, "kpo/test", img.split("/")[-1][:-4] + '_keypoints.json')
+        p = os.path.join(data_path, "kpo/train", img.split("/")[-1][:-4] + '_keypoints.json')
         pt1, pt2, _ = get_json_data(p, 1, 8)
         pt3, pt4, _ = get_json_data(p, 2, 5)
         for j in range(image.shape[0]):
             for i in range(image.shape[1]):
-                if (pt3[0] < i < pt4[0] or pt4[0] < i < pt3[0]) and pt1[1] < j < pt2[1]:
+                if min(pt3[0], pt4[0]) < i < max(pt3[0], pt4[0]) and pt1[1] < j < pt2[1]:
                     m[j][i] = 1
         image[m > 0] = 0
-        cv2.imwrite(img, image)
+        cv2.imwrite(os.path.join(data_path, path+"crop2", img.split("/")[-1]), image)
 
 
 # crop("queryc")
