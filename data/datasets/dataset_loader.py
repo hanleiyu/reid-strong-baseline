@@ -5,9 +5,12 @@
 """
 
 import os.path as osp
+
+import torch
 from PIL import Image
 from torch.utils.data import Dataset
-
+import torchvision.transforms as T
+from ..transforms.transforms import RandomCrop, RandomHorizontalFlip
 
 def read_image(img_path):
     """Keep reading image until succeed.
@@ -48,9 +51,10 @@ class ImageDataset(Dataset):
 class ImageDatasetPart(Dataset):
     """Image Person ReID Dataset"""
 
-    def __init__(self, dataset, transform=None):
+    def __init__(self, dataset, cfg=None, transform=None):
         self.dataset = dataset
         self.transform = transform
+        self.cfg = cfg
 
     def __len__(self):
         return len(self.dataset)
@@ -62,7 +66,30 @@ class ImageDatasetPart(Dataset):
 
         if self.transform is not None:
             img = self.transform(img)
+        else:
+            masks = []
+            num = len(mask[:, 0, 0, 0])
+            for i in range(num):
+                masks.append(Image.fromarray(mask[i, 0, :, :]))
 
-        return img, pid, camid, img_path, mask
+            img = T.Resize(self.cfg.INPUT.SIZE_TRAIN)(img)
+            for i in range(num):
+                masks[i] = T.Resize(self.cfg.INPUT.SIZE_TRAIN)(masks[i])
+
+            img, masks = RandomHorizontalFlip(p=self.cfg.INPUT.PROB)(img, masks)
+
+            img = T.Pad(self.cfg.INPUT.PADDING)(img)
+            for i in range(num):
+                masks[i] = T.Pad(self.cfg.INPUT.PADDING)(masks[i])
+
+            img, masks = RandomCrop(self.cfg.INPUT.SIZE_TRAIN)(img, masks)
+
+            img = T.ToTensor()(img)
+            masks = T.ToTensor()(masks)
+            for i in range(num):
+                masks[i] = torch.unsqueeze(masks[i], 0)
+            img = T.Normalize(mean=self.cfg.INPUT.PIXEL_MEAN, std=self.cfg.INPUT.PIXEL_STD)(img)
+
+        return img, pid, camid, img_path, masks
         # return img, pid, camid, img_path
 

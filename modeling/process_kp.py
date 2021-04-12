@@ -9,6 +9,7 @@ import math
 import numpy as np
 import torch
 import cv2
+from torchvision import transforms
 
 
 def resize_json_data(path, h, w):
@@ -49,29 +50,33 @@ def resize_kp(a, b, name):
 
 
 def remove(name):
-    json_paths = glob.glob(osp.join(data_path, 'kp', name, '*.json'))
+    json_paths = glob.glob(osp.join(data_path, 'kpo', name, '*.json'))
     kp = [1, 2, 5, 8]
     num = 0
     for p in json_paths:
         flag = 1
         with open(p, 'rb') as f:
             params = json.load(f)
-            if (params[3 * 10 + 2] == 0 or params[3 * 11 + 2] == 0) and (
-                    params[3 * 13 + 2] == 0 or params[3 * 14 + 2] == 0):
-                flag = 0
-            elif (params[3 * 2 + 2] == 0 or params[3 * 3 + 2] == 0) and (
-                    params[3 * 5 + 2] == 0 or params[3 * 6 + 2] == 0):
-                flag = 0
-            elif (params[3 * 3 + 2] == 0 or params[3 * 4 + 2] == 0) and (
-                    params[3 * 7 + 2] == 0 or params[3 * 6 + 2] == 0):
-                flag = 0
-            elif params[3 * 10 + 2] == 0  and params[3 * 13 + 2] == 0:
-                flag = 0
+            if len(params['people']) > 0:
+                params = params['people'][0]['pose_keypoints_2d']
+                if (params[3 * 10 + 2] == 0 or params[3 * 11 + 2] == 0) and (
+                        params[3 * 13 + 2] == 0 or params[3 * 14 + 2] == 0):
+                    flag = 0
+                elif (params[3 * 2 + 2] == 0 or params[3 * 3 + 2] == 0) and (
+                        params[3 * 5 + 2] == 0 or params[3 * 6 + 2] == 0):
+                    flag = 0
+                elif (params[3 * 3 + 2] == 0 or params[3 * 4 + 2] == 0) and (
+                        params[3 * 7 + 2] == 0 or params[3 * 6 + 2] == 0):
+                    flag = 0
+                elif params[3 * 10 + 2] == 0  and params[3 * 13 + 2] == 0:
+                    flag = 0
+                else:
+                    for i in range(len(kp)):
+                        if params[3 * kp[i] + 2] == 0:
+                            flag = 0
+                            break
             else:
-                for i in range(len(kp)):
-                    if params[3 * kp[i] + 2] == 0:
-                        flag = 0
-                        break
+                flag = 0
 
         f.close()
         if flag:
@@ -79,7 +84,7 @@ def remove(name):
         else:
             print(p)
             os.remove(p)
-            os.remove(osp.join(data_path, name, p.split("/")[-1][:-15] + '.jpg'))
+            # os.remove(osp.join(data_path, name, p.split("/")[-1][:-15] + '.jpg'))
     print(num)
 
 
@@ -203,10 +208,10 @@ def dda_line_points(pt1, pt2):
     return line
 
 
-def cal_mask(p, a, b=0):
+def cal_mask(p, h, w, a, b=0):
     pt3 = []
     pt4 = []
-    m = torch.zeros(size=(16, 8))
+    m = torch.zeros(size=(h, w))
     if a != "face" and a != "body" and a != "people":
         if a == "leg":
             pt1, pt2, pt3, pt4, c = get_part_data(p, "leg")
@@ -222,11 +227,11 @@ def cal_mask(p, a, b=0):
         line = dda_line_points(pt1, pt2) + dda_line_points(pt3, pt4)
 
         for i in range(len(line)):
-            if line[i][0] <= 7 and line[i][1] <= 15:
+            if line[i][0] <= w-1 and line[i][1] <= h-1:
                 m[line[i][1]][line[i][0]] = 1
-                if line[i][0] <= 6:
+                if line[i][0] < w-1:
                     m[line[i][1]][line[i][0] + 1] = 1
-                if line[i][1] <= 14:
+                if line[i][1] < h-1:
                     m[line[i][1] + 1][line[i][0]] = 1
                 if line[i][0] >= 1:
                     m[line[i][1]][line[i][0] - 1] = 1
@@ -237,11 +242,18 @@ def cal_mask(p, a, b=0):
     elif a == "face":
         with open(p, 'rb') as f:
             params = json.load(f)
+            params = params['people'][0]['pose_keypoints_2d']
             if len(params) > 0:
-                t = params[3*1]
+                t = math.floor(params[3*1 + 1])
                 c = params[3*1+2]
+                p1 = math.floor(params[3 * 2])
+                p2 = math.floor(params[3 * 5])
+                # print(p)
             for i in range(t+1):
-                m[:][i] = 1
+                if i<h:
+                    for j in range(min(p1, p2), max(p1, p2)):
+                        if j < w:
+                            m[i][j] = 1
     elif a == "body" or a == "people":
         pt1, pt2, pt3, pt4, c1 = get_part_data(p, "leg")
         line = dda_line_points(pt1, pt2) + dda_line_points(pt3, pt4)
@@ -256,7 +268,7 @@ def cal_mask(p, a, b=0):
         line += dda_line_points(pt1, pt2) + dda_line_points(pt3, pt4)
         c = (c1 + c2 + c3 + c4 + c5 + c6)/6
         for i in range(len(line)):
-            if line[i][0] <= 7 and line[i][1] <= 15:
+            if line[i][0] < w and line[i][1] < h:
                 m[line[i][1]][line[i][0]] = 1
         if a == "people":
             with open(p, 'rb') as f:
@@ -267,29 +279,33 @@ def cal_mask(p, a, b=0):
                 for i in range(t + 1):
                     m[:][i] = 1
 
+    # new_img_PIL = transforms.ToPILImage()(np.array(m))
+    # new_img_PIL.show()
     mask = torch.unsqueeze(m, 0)
     return mask, c
 
 
 def cal_kp(path):
     dictionary = {}
-    json_paths = glob.glob(osp.join(data_path, 'kp', path, '*.json'))
+    json_paths = glob.glob(osp.join(data_path, 'kpo', path, '*.json'))
     for p in json_paths:
         img = p.split("/")[-1][:-15]
+        imgs = Image.open(osp.join(data_path, path, img + '.jpg'))
         # m1, c1 = cal_mask(p, 1, 8)
         # m2, c2 = cal_mask(p, 2, 5)
         # m3, c3 = cal_mask(p, 8, 10)
         # m4, c4 = cal_mask(p, 8, 13)
-        m5, c5 = cal_mask(p, "leg")
+        m5, c5 = cal_mask(p, imgs.size[1], imgs.size[0], "leg")
         # m6, c6 = cal_mask(p, "thigh")
-        m7, c7 = cal_mask(p, "arm")
-        m8, c8 = cal_mask(p, "hand")
-        m9, c9 = cal_mask(p, "face")
+        m7, c7 = cal_mask(p, imgs.size[1], imgs.size[0], "arm")
+        m8, c8 = cal_mask(p, imgs.size[1], imgs.size[0], "hand")
+        m9, c9 = cal_mask(p, imgs.size[1], imgs.size[0], "face")
         # m10, c10 = cal_mask(p, "body")
         # m11, c10 = cal_mask(p, "people")
         mask = torch.stack((m5, m7, m8, m9), 0)
         # c = [c1, c2, c5, c6, c7, m8]
         # mask = torch.unsqueeze(m11, 0)
+        mask = mask.numpy()
         dictionary.update({img: mask})
         # dictionary.update({img: {"mask":mask, "confidence":c}})
     return dictionary
@@ -297,15 +313,15 @@ def cal_kp(path):
 
 def save_kp():
     maskt = cal_kp("train")
-    maskg = cal_kp("gallery")
-    maskq = cal_kp("queryc")
+    # maskg = cal_kp("gallery")
+    # maskq = cal_kp("queryc")
     torch.save(maskt, osp.join(data_path, 'part4n/maskt.pt'))
-    torch.save(maskg, osp.join(data_path, 'part4n/maskg.pt'))
-    torch.save(maskq, osp.join(data_path, 'part4n/maskq.pt'))
+    # torch.save(maskg, osp.join(data_path, 'part4n/maskg.pt'))
+    # torch.save(maskq, osp.join(data_path, 'part4n/maskq.pt'))
 
 
 data_path = "/home/yhl/data/prcc/rgb"
-# save_kp()
+save_kp()
 
 
 
@@ -444,3 +460,7 @@ def cropnew(path):
 # cropnew("gallery")
 # cropnew("train")
 
+
+# imgs = Image.open("/home/yhl/data/prcc/rgb/train/147_B_cropped_rgb379.jpg")
+# p = "/home/yhl/data/prcc/rgb/kpo/train/147_B_cropped_rgb379_keypoints.json"
+# m9, c9 = cal_mask(p, imgs.size[1], imgs.size[0], "face")

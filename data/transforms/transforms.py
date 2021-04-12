@@ -5,7 +5,10 @@
 """
 
 import math
+import numbers
 import random
+from PIL import Image
+import torchvision.transforms.functional as F
 
 
 class RandomErasing(object):
@@ -53,3 +56,94 @@ class RandomErasing(object):
                 return img
 
         return img
+
+
+class RandomHorizontalFlip(object):
+    """Horizontally flip the given PIL Image randomly with a given probability.
+
+    Args:
+        p (float): probability of the image being flipped. Default value is 0.5
+    """
+
+    def __init__(self, p=0.5):
+        self.p = p
+
+    def __call__(self, img, masks):
+        """
+        Args:
+            img (PIL Image): Image to be flipped.
+
+        Returns:
+            PIL Image: Randomly flipped image.
+        """
+        if random.random() < self.p:
+            for i in range(len(masks)):
+                masks[i] = F.hflip(masks[i])
+            return F.hflip(img), masks
+        return img, masks
+
+    def __repr__(self):
+        return self.__class__.__name__ + '(p={})'.format(self.p)
+
+
+class RandomCrop(object):
+    """Crop the given PIL Image at a random location.
+
+    Args:
+        size (sequence or int): Desired output size of the crop. If size is an
+            int instead of sequence like (h, w), a square crop (size, size) is
+            made.
+        padding (int or sequence, optional): Optional padding on each border
+            of the image. Default is 0, i.e no padding. If a sequence of length
+            4 is provided, it is used to pad left, top, right, bottom borders
+            respectively.
+        pad_if_needed (boolean): It will pad the image if smaller than the
+            desired size to avoid raising an exception.
+    """
+
+    def __init__(self, size, padding=0, pad_if_needed=False):
+        if isinstance(size, numbers.Number):
+            self.size = (int(size), int(size))
+        else:
+            self.size = size
+        self.padding = padding
+        self.pad_if_needed = pad_if_needed
+
+    @staticmethod
+    def get_params(img, output_size):
+        """Get parameters for ``crop`` for a random crop.
+
+        Args:
+            img (PIL Image): Image to be cropped.
+            output_size (tuple): Expected output size of the crop.
+
+        Returns:
+            tuple: params (i, j, h, w) to be passed to ``crop`` for random crop.
+        """
+        w, h = img.size
+        th, tw = output_size
+        if w == tw and h == th:
+            return 0, 0, h, w
+
+        i = random.randint(0, h - th)
+        j = random.randint(0, w - tw)
+        return i, j, th, tw
+
+    def __call__(self, img, masks):
+        """
+        Args:
+            img (PIL Image): Image to be cropped.
+
+        Returns:
+            PIL Image: Cropped image.
+        """
+
+        i, j, h, w = self.get_params(img, self.size)
+
+        for i in range(len(masks)):
+            masks[i] = F.crop(masks[i], i, j, h, w)
+
+        return F.crop(img, i, j, h, w), masks
+
+    def __repr__(self):
+        return self.__class__.__name__ + '(size={0}, padding={1})'.format(self.size, self.padding)
