@@ -16,7 +16,7 @@ import os.path as osp
 import torch
 
 def make_data_loader(cfg):
-    # train_transforms = build_transforms(cfg, is_train=True)
+    train_transforms = build_transforms(cfg, is_train=True)
     val_transforms = build_transforms(cfg, is_train=False)
     num_workers = cfg.DATALOADER.NUM_WORKERS
     if len(cfg.DATASETS.NAMES) == 1:
@@ -28,7 +28,7 @@ def make_data_loader(cfg):
 
     num_classes = dataset.num_train_pids
 
-    train_set = ImageDataset(dataset.train, cfg)
+    train_set = ImageDataset(dataset.train, train_transforms)
 
     if cfg.DATALOADER.SAMPLER == 'softmax':
         train_loader = DataLoader(
@@ -53,14 +53,14 @@ def make_data_loader(cfg):
 
 
 def make_data_loader_part(cfg):
-    train_transforms = build_transforms(cfg, is_train=True)
+    # train_transforms = build_transforms(cfg, is_train=True)
     val_transforms = build_transforms(cfg, is_train=False)
     num_workers = cfg.DATALOADER.NUM_WORKERS
 
     dataset = init_dataset(cfg.DATASETS.NAMES, root=cfg.DATASETS.ROOT_DIR)
 
     num_classes = dataset.num_train_pids
-    train_set = ImageDatasetPart(dataset.train, True, train_transforms)
+    train_set = ImageDatasetPart(dataset.train, cfg)
 
     if cfg.DATALOADER.SAMPLER == 'softmax':
         train_loader = DataLoader(
@@ -75,7 +75,7 @@ def make_data_loader_part(cfg):
             num_workers=num_workers, collate_fn=part_train_collate_fn
         )
 
-    val_set = ImageDatasetPart(dataset.query + dataset.gallery, True, val_transforms)
+    val_set = ImageDatasetPart(dataset.query + dataset.gallery, transform=val_transforms)
 
     val_loader = DataLoader(
         val_set, batch_size=cfg.TEST.IMS_PER_BATCH, shuffle=False, num_workers=num_workers,

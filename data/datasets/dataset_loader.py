@@ -85,11 +85,17 @@ class ImageDatasetPart(Dataset):
             img, masks = RandomCrop(self.cfg.INPUT.SIZE_TRAIN)(img, masks)
 
             img = T.ToTensor()(img)
-            masks = T.ToTensor()(masks)
+
             for i in range(num):
-                masks[i] = torch.unsqueeze(masks[i], 0)
+                masks[i] = T.Resize([16, 8])(masks[i])
+
+            for i in range(num):
+                masks[i] = T.ToTensor()(masks[i])
+                # masks[i] = torch.unsqueeze(masks[i], 0)
+            mask = torch.stack((masks[0], masks[1], masks[2], masks[3]), 0)
+
             img = T.Normalize(mean=self.cfg.INPUT.PIXEL_MEAN, std=self.cfg.INPUT.PIXEL_STD)(img)
 
-        return img, pid, camid, img_path, masks
+        return img, pid, camid, img_path, mask
         # return img, pid, camid, img_path
 
