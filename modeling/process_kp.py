@@ -134,6 +134,7 @@ def get_part_data(path, name):
                 t3 = [params[3 * n2], params[3 * n2 + 1]]
                 t4 = [params[3 * (n2 + 1)], params[3 * (n2 + 1) + 1]]
                 c2 = (params[3 * n2 + 2] + params[3 * (n2 + 1) + 2]) / 2
+
     f.close()
 
     if c1 != 0 and c2 != 0:
@@ -215,28 +216,31 @@ def cal_mask(p, h, w, a, b=0):
     if a != "face" and a != "body" and a != "people":
         if a == "leg":
             pt1, pt2, pt3, pt4, c = get_part_data(p, "leg")
+            weight = 15
         elif a == "thigh":
             pt1, pt2, pt3, pt4, c = get_thigh_data(p)
         elif a == "arm":
             pt1, pt2, pt3, pt4, c = get_part_data(p, "arm")
+            weight = 10
         elif a == "hand":
             pt1, pt2, pt3, pt4, c = get_part_data(p, "hand")
+            weight = 10
         else:
             pt1, pt2, c = get_json_data(p, a, b)
 
         line = dda_line_points(pt1, pt2) + dda_line_points(pt3, pt4)
-
+        # print(p)
         for i in range(len(line)):
             if line[i][0] <= w-1 and line[i][1] <= h-1:
-                m[line[i][1]][line[i][0]] = 1
-                if line[i][0] < w-1:
-                    m[line[i][1]][line[i][0] + 1] = 1
-                if line[i][1] < h-1:
-                    m[line[i][1] + 1][line[i][0]] = 1
-                if line[i][0] >= 1:
-                    m[line[i][1]][line[i][0] - 1] = 1
-                if line[i][1] >= 1:
-                    m[line[i][1] - 1][line[i][0]] = 1
+                for j in range(weight):
+                    if line[i][0] < w-1-j:
+                        m[line[i][1]][line[i][0] + j] = 1
+                    if line[i][1] < h-1-j:
+                        m[line[i][1] + j][line[i][0]] = 1
+                    if line[i][0] >= j:
+                        m[line[i][1]][line[i][0] - j] = 1
+                    if line[i][1] >= j:
+                        m[line[i][1] - j][line[i][0]] = 1
             # else:
             #     print(p)
     elif a == "face":
@@ -254,30 +258,30 @@ def cal_mask(p, h, w, a, b=0):
                     for j in range(min(p1, p2), max(p1, p2)):
                         if j < w:
                             m[i][j] = 1
-    elif a == "body" or a == "people":
-        pt1, pt2, pt3, pt4, c1 = get_part_data(p, "leg")
-        line = dda_line_points(pt1, pt2) + dda_line_points(pt3, pt4)
-        pt1, pt2, pt3, pt4, c2 = get_thigh_data(p)
-        line += dda_line_points(pt1, pt2) + dda_line_points(pt3, pt4)
-        pt1, pt2, pt3, pt4, c3 = get_part_data(p, "arm")
-        line += dda_line_points(pt1, pt2) + dda_line_points(pt3, pt4)
-        pt1, pt2, pt3, pt4, c4 = get_part_data(p, "hand")
-        line += dda_line_points(pt1, pt2) + dda_line_points(pt3, pt4)
-        pt1, pt2, c5 = get_json_data(p, 1, 8)
-        pt3, pt4, c6 = get_json_data(p, 2, 5)
-        line += dda_line_points(pt1, pt2) + dda_line_points(pt3, pt4)
-        c = (c1 + c2 + c3 + c4 + c5 + c6)/6
-        for i in range(len(line)):
-            if line[i][0] < w and line[i][1] < h:
-                m[line[i][1]][line[i][0]] = 1
-        if a == "people":
-            with open(p, 'rb') as f:
-                params = json.load(f)
-                if len(params) > 0:
-                    t = params[3 * 1]
-                    c = params[3 * 1 + 2]
-                for i in range(t + 1):
-                    m[:][i] = 1
+    # elif a == "body" or a == "people":
+    #     pt1, pt2, pt3, pt4, c1 = get_part_data(p, "leg")
+    #     line = dda_line_points(pt1, pt2) + dda_line_points(pt3, pt4)
+    #     pt1, pt2, pt3, pt4, c2 = get_thigh_data(p)
+    #     line += dda_line_points(pt1, pt2) + dda_line_points(pt3, pt4)
+    #     pt1, pt2, pt3, pt4, c3 = get_part_data(p, "arm")
+    #     line += dda_line_points(pt1, pt2) + dda_line_points(pt3, pt4)
+    #     pt1, pt2, pt3, pt4, c4 = get_part_data(p, "hand")
+    #     line += dda_line_points(pt1, pt2) + dda_line_points(pt3, pt4)
+    #     pt1, pt2, c5 = get_json_data(p, 1, 8)
+    #     pt3, pt4, c6 = get_json_data(p, 2, 5)
+    #     line += dda_line_points(pt1, pt2) + dda_line_points(pt3, pt4)
+    #     c = (c1 + c2 + c3 + c4 + c5 + c6)/6
+    #     for i in range(len(line)):
+    #         if line[i][0] < w and line[i][1] < h:
+    #             m[line[i][1]][line[i][0]] = 1
+    #     if a == "people":
+    #         with open(p, 'rb') as f:
+    #             params = json.load(f)
+    #             if len(params) > 0:
+    #                 t = params[3 * 1]
+    #                 c = params[3 * 1 + 2]
+    #             for i in range(t + 1):
+    #                 m[:][i] = 1
 
     # new_img_PIL = transforms.ToPILImage()(np.array(m))
     # new_img_PIL.show()
@@ -287,7 +291,8 @@ def cal_mask(p, h, w, a, b=0):
 
 def cal_kp(path):
     dictionary = {}
-    json_paths = glob.glob(osp.join(data_path, 'kpo', path, '*.json'))
+    # json_paths = glob.glob(osp.join(data_path, 'kpo', path, '*.json'))
+    json_paths = glob.glob("/home/yhl/data/prcc/rgb/kpo/train/121_A_cropped_rgb052_keypoints.json")
     for p in json_paths:
         img = p.split("/")[-1][:-15]
         imgs = Image.open(osp.join(data_path, path, img + '.jpg'))
@@ -315,7 +320,7 @@ def save_kp():
     maskt = cal_kp("train")
     # maskg = cal_kp("gallery")
     # maskq = cal_kp("queryc")
-    torch.save(maskt, osp.join(data_path, 'part4n/maskt.pt'))
+    torch.save(maskt, osp.join(data_path, 'part4n/masktest1.pt'))
     # torch.save(maskg, osp.join(data_path, 'part4n/maskg.pt'))
     # torch.save(maskq, osp.join(data_path, 'part4n/maskq.pt'))
 
@@ -461,6 +466,6 @@ def cropnew(path):
 # cropnew("train")
 
 
-# imgs = Image.open("/home/yhl/data/prcc/rgb/train/147_B_cropped_rgb379.jpg")
-# p = "/home/yhl/data/prcc/rgb/kpo/train/147_B_cropped_rgb379_keypoints.json"
-# m9, c9 = cal_mask(p, imgs.size[1], imgs.size[0], "face")
+# imgs = Image.open("/home/yhl/data/prcc/rgb/train/113_C_cropped_rgb253.jpg")
+# p = "/home/yhl/data/prcc/rgb/kpo/train/113_C_cropped_rgb253_keypoints.json"
+# m9, c9 = cal_mask(p, imgs.size[1], imgs.size[0], "arm")

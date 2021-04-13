@@ -365,18 +365,18 @@ def do_train_part(
         #                         engine.state.metrics['avg_acc'], engine.state.metrics['avg_acc1'],
         #                         engine.state.metrics['avg_acc2'],
         #                         scheduler.get_lr()[0], log_var[0], log_var[1], log_var[2]))
-        # if ITER % log_period == 0:
-        #     logger.info("Epoch[{}] Iteration[{}/{}] Loss: {:.3f}, Loss1: {:.3f}, Loss2: {:.3f}, Loss3: {:.3f}, Loss4: {:.3f},"
-        #                 "Acc: {:.3f}, Acc1: {:.3f}, Acc2: {:.3f}, Acc3: {:.3f}, Acc4: {:.3f},"
-        #                 "Base Lr: {:.2e}, var: {:.3f}, var1: {:.3f}, var2: {:.3f}, var3: {:.3f}, var4: {:.3f}"
-        #                 .format(engine.state.epoch, ITER, len(train_loader),
-        #                         engine.state.metrics['avg_loss'], engine.state.metrics['avg_loss1'],
-        #                         engine.state.metrics['avg_loss2'], engine.state.metrics['avg_loss3'],
-        #                         engine.state.metrics['avg_loss4'],
-        #                         engine.state.metrics['avg_acc'], engine.state.metrics['avg_acc1'],
-        #                         engine.state.metrics['avg_acc2'], engine.state.metrics['avg_acc3'],
-        #                         engine.state.metrics['avg_acc4'],
-        #                         scheduler.get_lr()[0], log_var[0], log_var[1], log_var[2], log_var[3], log_var[4]))
+        if ITER % log_period == 0:
+            logger.info("Epoch[{}] Iteration[{}/{}] Loss: {:.3f}, Loss1: {:.3f}, Loss2: {:.3f}, Loss3: {:.3f}, Loss4: {:.3f},"
+                        "Acc: {:.3f}, Acc1: {:.3f}, Acc2: {:.3f}, Acc3: {:.3f}, Acc4: {:.3f},"
+                        "Base Lr: {:.2e}, var: {:.3f}, var1: {:.3f}, var2: {:.3f}, var3: {:.3f}, var4: {:.3f}"
+                        .format(engine.state.epoch, ITER, len(train_loader),
+                                engine.state.metrics['avg_loss'], engine.state.metrics['avg_loss1'],
+                                engine.state.metrics['avg_loss2'], engine.state.metrics['avg_loss3'],
+                                engine.state.metrics['avg_loss4'],
+                                engine.state.metrics['avg_acc'], engine.state.metrics['avg_acc1'],
+                                engine.state.metrics['avg_acc2'], engine.state.metrics['avg_acc3'],
+                                engine.state.metrics['avg_acc4'],
+                                scheduler.get_lr()[0], log_var[0], log_var[1], log_var[2], log_var[3], log_var[4]))
         # if ITER % log_period == 0:
         #     logger.info("Epoch[{}] Iteration[{}/{}] Loss: {:.3f}, Loss1: {:.3f}, Loss2: {:.3f}, Loss3: {:.3f}, Loss4: {:.3f}, Loss5: {:.3f},"
         #                 "Acc: {:.3f}, Acc1: {:.3f}, Acc2: {:.3f}, Acc3: {:.3f}, Acc4: {:.3f},  Acc5: {:.3f},"
@@ -442,18 +442,18 @@ def do_train_part(
         #                         engine.state.metrics['avg_acc'], engine.state.metrics['avg_acc1'],
         #                         engine.state.metrics['avg_acc2'],
         #                         scheduler.get_lr()[0]))
-        if ITER % log_period == 0:
-            logger.info("Epoch[{}] Iteration[{}/{}] Loss: {:.3f}, Loss1: {:.3f}, Loss2: {:.3f}, Loss3: {:.3f}, Loss4: {:.3f},"
-                        "Acc: {:.3f}, Acc1: {:.3f}, Acc2: {:.3f}, Acc3: {:.3f}, Acc4: {:.3f},"
-                        "Base Lr: {:.2e}"
-                        .format(engine.state.epoch, ITER, len(train_loader),
-                                engine.state.metrics['avg_loss'], engine.state.metrics['avg_loss1'],
-                                engine.state.metrics['avg_loss2'], engine.state.metrics['avg_loss3'],
-                                engine.state.metrics['avg_loss4'],
-                                engine.state.metrics['avg_acc'], engine.state.metrics['avg_acc1'],
-                                engine.state.metrics['avg_acc2'], engine.state.metrics['avg_acc3'],
-                                engine.state.metrics['avg_acc4'],
-                                scheduler.get_lr()[0]))
+        # if ITER % log_period == 0:
+        #     logger.info("Epoch[{}] Iteration[{}/{}] Loss: {:.3f}, Loss1: {:.3f}, Loss2: {:.3f}, Loss3: {:.3f}, Loss4: {:.3f},"
+        #                 "Acc: {:.3f}, Acc1: {:.3f}, Acc2: {:.3f}, Acc3: {:.3f}, Acc4: {:.3f},"
+        #                 "Base Lr: {:.2e}"
+        #                 .format(engine.state.epoch, ITER, len(train_loader),
+        #                         engine.state.metrics['avg_loss'], engine.state.metrics['avg_loss1'],
+        #                         engine.state.metrics['avg_loss2'], engine.state.metrics['avg_loss3'],
+        #                         engine.state.metrics['avg_loss4'],
+        #                         engine.state.metrics['avg_acc'], engine.state.metrics['avg_acc1'],
+        #                         engine.state.metrics['avg_acc2'], engine.state.metrics['avg_acc3'],
+        #                         engine.state.metrics['avg_acc4'],
+        #                         scheduler.get_lr()[0]))
         # if ITER % log_period == 0:
         #     logger.info("Epoch[{}] Iteration[{}/{}] Loss: {:.3f}, Loss1: {:.3f}, Loss2: {:.3f}, Loss3: {:.3f}, Loss4: {:.3f}, Loss5: {:.3f},"
         #                 "Acc: {:.3f}, Acc1: {:.3f}, Acc2: {:.3f}, Acc3: {:.3f}, Acc4: {:.3f},  Acc5: {:.3f},"

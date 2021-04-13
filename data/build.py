@@ -132,7 +132,7 @@ def make_data_loader_prcc(cfg, trial=0):
         # query.append((img_path, pid, camid, mask))
         query.append((img_path, pid, camid))
 
-    val_set = ImageDatasetPart(query + gallery, val_transforms)
+    val_set = ImageDatasetPart(query + gallery, transform=val_transforms)
 
     val_loader = DataLoader(
         val_set, batch_size=cfg.TEST.IMS_PER_BATCH, shuffle=False, num_workers=num_workers,

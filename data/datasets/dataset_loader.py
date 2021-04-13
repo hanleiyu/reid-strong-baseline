@@ -10,7 +10,7 @@ import torch
 from PIL import Image
 from torch.utils.data import Dataset
 import torchvision.transforms as T
-from ..transforms.transforms import RandomCrop, RandomHorizontalFlip
+from ..transforms.transforms import RandomCrop, RandomHorizontalFlip, RandomErasing
 
 def read_image(img_path):
     """Keep reading image until succeed.
@@ -70,7 +70,7 @@ class ImageDatasetPart(Dataset):
             masks = []
             num = len(mask[:, 0, 0, 0])
             for i in range(num):
-                masks.append(Image.fromarray(mask[i, 0, :, :]))
+                masks.append(Image.fromarray(mask[i, 0, :, :], mode='RGB'))
 
             img = T.Resize(self.cfg.INPUT.SIZE_TRAIN)(img)
             for i in range(num):
@@ -97,7 +97,7 @@ class ImageDatasetPart(Dataset):
             mask = torch.stack((masks[0], masks[1], masks[2], masks[3]), 0)
 
             img = T.Normalize(mean=self.cfg.INPUT.PIXEL_MEAN, std=self.cfg.INPUT.PIXEL_STD)(img)
-
+            img = RandomErasing(probability=self.cfg.INPUT.RE_PROB, mean=self.cfg.INPUT.PIXEL_MEAN)(img)
         return img, pid, camid, img_path, mask
         # return img, pid, camid, img_path
 
