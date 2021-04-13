@@ -90,8 +90,10 @@ class ImageDatasetPart(Dataset):
                 masks[i] = T.Resize([16, 8])(masks[i])
 
             for i in range(num):
+                # masks[i] = torch.from_numpy(masks[i].transpose((2, 0, 1)))
                 masks[i] = T.ToTensor()(masks[i])
-                # masks[i] = torch.unsqueeze(masks[i], 0)
+                masks[i] = torch.where(masks[i] > 0, torch.ones(1), masks[i])
+
             mask = torch.stack((masks[0], masks[1], masks[2], masks[3]), 0)
 
             img = T.Normalize(mean=self.cfg.INPUT.PIXEL_MEAN, std=self.cfg.INPUT.PIXEL_STD)(img)
