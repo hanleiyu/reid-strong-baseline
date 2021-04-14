@@ -305,10 +305,6 @@ class Part(nn.Module):
             if self.resize == "on":
                 for i in range(num):
                     feats[i] = self.feat_process(global_feat, mask[:, i, :, :, :])
-            # else:
-                # for i in range(num):
-                    # ...
-                    # feats[i] = self.feat_process_origin(, mask[:, i, :, :, :])
 
             global_feat = self.gap(global_feat)  # (b, 2048, 1, 1)
             global_feat = global_feat.view(global_feat.shape[0], -1)  # flatten to (bs, 2048)

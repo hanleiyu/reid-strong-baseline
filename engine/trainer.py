@@ -77,13 +77,20 @@ def part_trainer(model, optimizer, loss_fn, log_var=None, device=None):
         ten = [torch.tensor(1.0).cuda() for _ in range(len(feat))]
         for i in range(len(feat)):
             if log_var is not None:
-                loss_part[i] = loss_fn(score[i], feat[i], target, log_var[i])
+                loss_part[i] = loss_fn(score[i], feat[i], target, log_var[i])[0]
+                # if i == len(feat) - 1:
+                #     loss_part[i] = loss_fn(score[i], feat[i], target, log_var[i])[0]
+                # else:
+                #     loss_part[i] = loss_fn(score[i], feat[i], target, log_var[i])[1]
             else:
-                loss_part[i] = loss_fn(score[i], feat[i], target)
+                loss_part[i] = loss_fn(score[i], feat[i], target)[0]
+                # if i == len(feat) - 1:
+                #     loss_part[i] = loss_fn(score[i], feat[i], target)[0]
+                # else:
+                #     loss_part[i] = loss_fn(score[i], feat[i], target)[1]
             acc[i] = (score[i].max(1)[1] == target).float().mean()
         torch.autograd.backward(loss_part, ten)
         optimizer.step()
-        # loss = mean(loss_part)
 
         # compute acc
         return loss_part, acc
@@ -377,7 +384,7 @@ def do_train_part(
                                 engine.state.metrics['avg_acc2'], engine.state.metrics['avg_acc3'],
                                 engine.state.metrics['avg_acc4'],
                                 scheduler.get_lr()[0], log_var[0], log_var[1], log_var[2], log_var[3], log_var[4]))
-        # if ITER % log_period == 0:
+        # # if ITER % log_period == 0:
         #     logger.info("Epoch[{}] Iteration[{}/{}] Loss: {:.3f}, Loss1: {:.3f}, Loss2: {:.3f}, Loss3: {:.3f}, Loss4: {:.3f}, Loss5: {:.3f},"
         #                 "Acc: {:.3f}, Acc1: {:.3f}, Acc2: {:.3f}, Acc3: {:.3f}, Acc4: {:.3f},  Acc5: {:.3f},"
         #                 "Base Lr: {:.2e}, var: {:.3f}, var1: {:.3f}, var2: {:.3f}, var3: {:.3f}, var4: {:.3f}, var5: {:.3f}"

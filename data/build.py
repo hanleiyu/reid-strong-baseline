@@ -53,14 +53,15 @@ def make_data_loader(cfg):
 
 
 def make_data_loader_part(cfg):
-    # train_transforms = build_transforms(cfg, is_train=True)
+    train_transforms = build_transforms(cfg, is_train=True)
     val_transforms = build_transforms(cfg, is_train=False)
     num_workers = cfg.DATALOADER.NUM_WORKERS
 
     dataset = init_dataset(cfg.DATASETS.NAMES, root=cfg.DATASETS.ROOT_DIR)
 
     num_classes = dataset.num_train_pids
-    train_set = ImageDatasetPart(dataset.train, cfg)
+    train_set = ImageDatasetPart(dataset.train, transform=train_transforms)
+    # train_set = ImageDatasetPart(dataset.train, cfg)
 
     if cfg.DATALOADER.SAMPLER == 'softmax':
         train_loader = DataLoader(
