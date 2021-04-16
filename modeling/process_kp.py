@@ -124,7 +124,7 @@ def get_part_data(path, name):
 
     with open(path, 'rb') as f:
         params = json.load(f)
-        # params = params['people'][0]['pose_keypoints_2d']
+        params = params['people'][0]['pose_keypoints_2d']
         if len(params) > 0:
             if params[3 * n1 + 2] != 0 and params[3 * (n1 + 1) + 2] != 0:
                 t1 = [params[3 * n1], params[3 * n1 + 1]]
@@ -216,15 +216,20 @@ def cal_mask(p, h, w, a, b=0):
     if a != "face" and a != "body" and a != "people":
         if a == "leg":
             pt1, pt2, pt3, pt4, c = get_part_data(p, "leg")
+            # weight = 10
             weight = 15
         elif a == "thigh":
             pt1, pt2, pt3, pt4, c = get_thigh_data(p)
         elif a == "arm":
             pt1, pt2, pt3, pt4, c = get_part_data(p, "arm")
-            weight = 10
+            # weight = 8
+            # weight = 10
+            weight = 12
         elif a == "hand":
             pt1, pt2, pt3, pt4, c = get_part_data(p, "hand")
-            weight = 10
+            # weight = 8
+            # weight = 10
+            weight = 12
         else:
             pt1, pt2, c = get_json_data(p, a, b)
 
@@ -232,22 +237,23 @@ def cal_mask(p, h, w, a, b=0):
         # print(p)
         for i in range(len(line)):
             if line[i][0] <= w-1 and line[i][1] <= h-1:
-                # for j in range(weight):
-                for j in range(1):
-                    if line[i][0] < w-1-j:
+                m[line[i][1]][line[i][0]] = 1
+                for j in range(1, weight):
+                # j = 1
+                    if line[i][0] <= w-1-j:
                         m[line[i][1]][line[i][0] + j] = 1
-                    if line[i][1] < h-1-j:
-                        m[line[i][1] + j][line[i][0]] = 1
+                    # if line[i][1] <= h-1-j:
+                    #     m[line[i][1] + j][line[i][0]] = 1
                     if line[i][0] >= j:
                         m[line[i][1]][line[i][0] - j] = 1
-                    if line[i][1] >= j:
-                        m[line[i][1] - j][line[i][0]] = 1
+                    # if line[i][1] >= j:
+                    #     m[line[i][1] - j][line[i][0]] = 1
             # else:
             #     print(p)
     elif a == "face":
         with open(p, 'rb') as f:
             params = json.load(f)
-            # params = params['people'][0]['pose_keypoints_2d']
+            params = params['people'][0]['pose_keypoints_2d']
             if len(params) > 0:
                 t = math.floor(params[3*1 + 1])
                 c = params[3*1+2]
@@ -255,6 +261,7 @@ def cal_mask(p, h, w, a, b=0):
                 p2 = math.floor(params[3 * 5])
                 # print(p)
             for i in range(t+1):
+                # m[:][i] = 1
                 if i<h:
                     for j in range(min(p1, p2), max(p1, p2)):
                         if j < w:
@@ -292,8 +299,8 @@ def cal_mask(p, h, w, a, b=0):
 
 def cal_kp(path):
     dictionary = {}
-    json_paths = glob.glob(osp.join(data_path, 'kp', path, '*.json'))
-    # json_paths = glob.glob("/home/yhl/data/prcc/rgb/kpo/train/121_A_cropped_rgb052_keypoints.json")
+    # json_paths = glob.glob(osp.join(data_path, 'kpo', path, '*.json'))
+    json_paths = glob.glob("/home/yhl/data/prcc/rgb/kpo/train/121_A_cropped_rgb052_keypoints.json")
     for p in json_paths:
         img = p.split("/")[-1][:-15]
         imgs = Image.open(osp.join(data_path, path, img + '.jpg'))
@@ -301,21 +308,21 @@ def cal_kp(path):
         # m2, c2 = cal_mask(p, 2, 5)
         # m3, c3 = cal_mask(p, 8, 10)
         # m4, c4 = cal_mask(p, 8, 13)
-        # m5, c5 = cal_mask(p, imgs.size[1], imgs.size[0], "leg")
-        m5, c5 = cal_mask(p, 16, 8, "leg")
+        m5, c5 = cal_mask(p, imgs.size[1], imgs.size[0], "leg")
+        # m5, c5 = cal_mask(p, 16, 8, "leg")
         # m6, c6 = cal_mask(p, "thigh")
-        # m7, c7 = cal_mask(p, imgs.size[1], imgs.size[0], "arm")
-        m7, c7 = cal_mask(p, 16, 8, "arm")
-        # m8, c8 = cal_mask(p, imgs.size[1], imgs.size[0], "hand")
-        m8, c8 = cal_mask(p, 16, 8, "hand")
-        # m9, c9 = cal_mask(p, imgs.size[1], imgs.size[0], "face")
-        m9, c9 = cal_mask(p, 16, 8, "face")
+        m7, c7 = cal_mask(p, imgs.size[1], imgs.size[0], "arm")
+        # m7, c7 = cal_mask(p, 16, 8, "arm")
+        m8, c8 = cal_mask(p, imgs.size[1], imgs.size[0], "hand")
+        # m8, c8 = cal_mask(p, 16, 8, "hand")
+        m9, c9 = cal_mask(p, imgs.size[1], imgs.size[0], "face")
+        # m9, c9 = cal_mask(p, 16, 8, "face")
         # m10, c10 = cal_mask(p, "body")
         # m11, c10 = cal_mask(p, "people")
         mask = torch.stack((m5, m7, m8, m9), 0)
         # c = [c1, c2, c5, c6, c7, m8]
         # mask = torch.unsqueeze(m11, 0)
-        # mask = mask.numpy()
+        mask = mask.numpy()
         dictionary.update({img: mask})
         # dictionary.update({img: {"mask":mask, "confidence":c}})
     return dictionary
@@ -325,7 +332,7 @@ def save_kp():
     maskt = cal_kp("train")
     # maskg = cal_kp("gallery")
     # maskq = cal_kp("queryc")
-    torch.save(maskt, osp.join(data_path, 'part4n/masktold.pt'))
+    torch.save(maskt, osp.join(data_path, 'part4n/test1.pt'))
     # torch.save(maskg, osp.join(data_path, 'part4n/maskg.pt'))
     # torch.save(maskq, osp.join(data_path, 'part4n/maskq.pt'))
 
@@ -474,3 +481,14 @@ def cropnew(path):
 # imgs = Image.open("/home/yhl/data/prcc/rgb/train/113_C_cropped_rgb253.jpg")
 # p = "/home/yhl/data/prcc/rgb/kpo/train/113_C_cropped_rgb253_keypoints.json"
 # m9, c9 = cal_mask(p, imgs.size[1], imgs.size[0], "arm")
+
+# img_paths = glob.glob(os.path.join("/home/yhl/data/prcc/rgb/train/", "*.jpg"))
+# h = 0
+# w = 0
+# n = 0
+# for img in img_paths:
+#     pic = Image.open(img)
+#     h += pic.size[1]
+#     w += pic.size[0]
+#     n += 1
+# print(h/n, w/n)

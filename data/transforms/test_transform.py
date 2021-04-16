@@ -7,7 +7,7 @@ from data.transforms.transforms import RandomCrop, RandomHorizontalFlip, RandomE
 
 path = "/home/yhl/data/prcc/rgb/train/121_A_cropped_rgb052.jpg"
 img = Image.open(path).convert('RGB')
-kps = torch.load('/home/yhl/data/prcc/rgb/part4n/masktest1.pt')
+kps = torch.load('/home/yhl/data/prcc/rgb/part4n/test1.pt')
 mask = kps[path.split("/")[-1][:-4]]
 
 
