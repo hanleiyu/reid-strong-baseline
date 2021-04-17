@@ -56,8 +56,8 @@ class PRCC(BaseImageDataset):
 
     def _process_dir(self, dir_path, relabel=False):
         if dir_path.find("train") != -1:
-            # kps = torch.load('/home/yhl/data/prcc/rgb/part4n/maskt.pt')
-            kps = torch.load('/home/yhl/data/prcc/rgb/part4n/masktwreal.pt')
+            kps = torch.load('/home/yhl/data/prcc/rgb/part4n/masktoldsmallface.pt')
+            # kps = torch.load('/home/yhl/data/prcc/rgb/part4n/masktwreal.pt')
             # kps = torch.load('/home/yhl/data/prcc/rgb/part4n/masktbig.pt')
             # kps = torch.load('/home/yhl/data/prcc/rgb/part4n/masktsmall.pt')
         # elif dir_path.find("gallery") != -1:

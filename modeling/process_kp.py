@@ -217,19 +217,19 @@ def cal_mask(p, h, w, a, b=0):
         if a == "leg":
             pt1, pt2, pt3, pt4, c = get_part_data(p, "leg")
             # weight = 10
-            weight = 15
+            # weight = 15
         elif a == "thigh":
             pt1, pt2, pt3, pt4, c = get_thigh_data(p)
         elif a == "arm":
             pt1, pt2, pt3, pt4, c = get_part_data(p, "arm")
             # weight = 8
             # weight = 10
-            weight = 12
+            # weight = 12
         elif a == "hand":
             pt1, pt2, pt3, pt4, c = get_part_data(p, "hand")
             # weight = 8
             # weight = 10
-            weight = 12
+            # weight = 12
         else:
             pt1, pt2, c = get_json_data(p, a, b)
 
@@ -238,14 +238,14 @@ def cal_mask(p, h, w, a, b=0):
         for i in range(len(line)):
             if line[i][0] <= w-1 and line[i][1] <= h-1:
                 m[line[i][1]][line[i][0]] = 1
-                for j in range(1, weight):
-                # j = 1
-                    if line[i][0] <= w-1-j:
-                        m[line[i][1]][line[i][0] + j] = 1
-                    # if line[i][1] <= h-1-j:
-                    #     m[line[i][1] + j][line[i][0]] = 1
-                    if line[i][0] >= j:
-                        m[line[i][1]][line[i][0] - j] = 1
+                # for j in range(1, weight):
+                j = 1
+                if line[i][0] <= w-1-j:
+                    m[line[i][1]][line[i][0] + j] = 1
+                # if line[i][1] <= h-1-j:
+                #     m[line[i][1] + j][line[i][0]] = 1
+                if line[i][0] >= j:
+                    m[line[i][1]][line[i][0] - j] = 1
                     # if line[i][1] >= j:
                     #     m[line[i][1] - j][line[i][0]] = 1
             # else:
@@ -299,24 +299,24 @@ def cal_mask(p, h, w, a, b=0):
 
 def cal_kp(path):
     dictionary = {}
-    # json_paths = glob.glob(osp.join(data_path, 'kpo', path, '*.json'))
-    json_paths = glob.glob("/home/yhl/data/prcc/rgb/kpo/train/121_A_cropped_rgb052_keypoints.json")
+    json_paths = glob.glob(osp.join(data_path, 'kpo', path, '*.json'))
+    # json_paths = glob.glob("/home/yhl/data/prcc/rgb/kpo/train/121_A_cropped_rgb052_keypoints.json")
     for p in json_paths:
         img = p.split("/")[-1][:-15]
-        imgs = Image.open(osp.join(data_path, path, img + '.jpg'))
+        # imgs = Image.open(osp.join(data_path, path, img + '.jpg'))
         # m1, c1 = cal_mask(p, 1, 8)
         # m2, c2 = cal_mask(p, 2, 5)
         # m3, c3 = cal_mask(p, 8, 10)
         # m4, c4 = cal_mask(p, 8, 13)
-        m5, c5 = cal_mask(p, imgs.size[1], imgs.size[0], "leg")
-        # m5, c5 = cal_mask(p, 16, 8, "leg")
+        # m5, c5 = cal_mask(p, imgs.size[1], imgs.size[0], "leg")
+        m5, c5 = cal_mask(p, 16, 8, "leg")
         # m6, c6 = cal_mask(p, "thigh")
-        m7, c7 = cal_mask(p, imgs.size[1], imgs.size[0], "arm")
-        # m7, c7 = cal_mask(p, 16, 8, "arm")
-        m8, c8 = cal_mask(p, imgs.size[1], imgs.size[0], "hand")
-        # m8, c8 = cal_mask(p, 16, 8, "hand")
-        m9, c9 = cal_mask(p, imgs.size[1], imgs.size[0], "face")
-        # m9, c9 = cal_mask(p, 16, 8, "face")
+        # m7, c7 = cal_mask(p, imgs.size[1], imgs.size[0], "arm")
+        m7, c7 = cal_mask(p, 16, 8, "arm")
+        # m8, c8 = cal_mask(p, imgs.size[1], imgs.size[0], "hand")
+        m8, c8 = cal_mask(p, 16, 8, "hand")
+        # m9, c9 = cal_mask(p, imgs.size[1], imgs.size[0], "face")
+        m9, c9 = cal_mask(p, 16, 8, "face")
         # m10, c10 = cal_mask(p, "body")
         # m11, c10 = cal_mask(p, "people")
         mask = torch.stack((m5, m7, m8, m9), 0)
@@ -332,7 +332,7 @@ def save_kp():
     maskt = cal_kp("train")
     # maskg = cal_kp("gallery")
     # maskq = cal_kp("queryc")
-    torch.save(maskt, osp.join(data_path, 'part4n/test1.pt'))
+    torch.save(maskt, osp.join(data_path, 'part4n/maskt.pt'))
     # torch.save(maskg, osp.join(data_path, 'part4n/maskg.pt'))
     # torch.save(maskq, osp.join(data_path, 'part4n/maskq.pt'))
 
