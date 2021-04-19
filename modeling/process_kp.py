@@ -124,7 +124,7 @@ def get_part_data(path, name):
 
     with open(path, 'rb') as f:
         params = json.load(f)
-        params = params['people'][0]['pose_keypoints_2d']
+        # params = params['people'][0]['pose_keypoints_2d']
         if len(params) > 0:
             if params[3 * n1 + 2] != 0 and params[3 * (n1 + 1) + 2] != 0:
                 t1 = [params[3 * n1], params[3 * n1 + 1]]
@@ -253,7 +253,7 @@ def cal_mask(p, h, w, a, b=0):
     elif a == "face":
         with open(p, 'rb') as f:
             params = json.load(f)
-            params = params['people'][0]['pose_keypoints_2d']
+            # params = params['people'][0]['pose_keypoints_2d']
             if len(params) > 0:
                 t = math.floor(params[3*1 + 1])
                 c = params[3*1+2]
@@ -299,7 +299,7 @@ def cal_mask(p, h, w, a, b=0):
 
 def cal_kp(path):
     dictionary = {}
-    json_paths = glob.glob(osp.join(data_path, 'kpo', path, '*.json'))
+    json_paths = glob.glob(osp.join(data_path, 'kp', path, '*.json'))
     # json_paths = glob.glob("/home/yhl/data/prcc/rgb/kpo/train/121_A_cropped_rgb052_keypoints.json")
     for p in json_paths:
         img = p.split("/")[-1][:-15]
@@ -329,12 +329,12 @@ def cal_kp(path):
 
 
 def save_kp():
-    maskt = cal_kp("train")
-    # maskg = cal_kp("gallery")
-    # maskq = cal_kp("queryc")
-    torch.save(maskt, osp.join(data_path, 'part4n/maskt.pt'))
-    # torch.save(maskg, osp.join(data_path, 'part4n/maskg.pt'))
-    # torch.save(maskq, osp.join(data_path, 'part4n/maskq.pt'))
+    # maskt = cal_kp("train")
+    maskg = cal_kp("gallery")
+    maskq = cal_kp("queryc")
+    # torch.save(maskt, osp.join(data_path, 'part4n/maskt.pt'))
+    torch.save(maskg, osp.join(data_path, 'part4n/maskg.pt'))
+    torch.save(maskq, osp.join(data_path, 'part4n/maskq.pt'))
 
 
 data_path = "/home/yhl/data/prcc/rgb"

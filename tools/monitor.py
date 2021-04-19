@@ -38,10 +38,12 @@ def popen_():
     val = val.replace("MiB\n", " ")
     val = val.rstrip().split(" ")
     flag = 0
-    for i in range(len(val)):
-        if int(val[i]) < 2000:
-            flag = 1
-            break
+    # for i in range(len(val)):
+    #     if int(val[i]) < 2000:
+    #         flag = 1
+    #         break
+    if int(val[0]) < 2000:
+        flag = 1
     if flag == 0:
         return False
     else:
@@ -55,8 +57,6 @@ while 1 :
         ret = mail()
         if ret:
             print("邮件发送成功")
-            time.sleep(350)
-            mail()
             time.sleep(350)
             mail()
             break

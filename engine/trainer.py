@@ -77,17 +77,17 @@ def part_trainer(model, optimizer, loss_fn, log_var=None, device=None):
         ten = [torch.tensor(1.0).cuda() for _ in range(len(feat))]
         for i in range(len(feat)):
             if log_var is not None:
-                # loss_part[i] = loss_fn(score[i], feat[i], target, log_var[i])[0]
-                if i == len(feat) - 1:
-                    loss_part[i] = loss_fn(score[i], feat[i], target, log_var[i])[0]
-                else:
-                    loss_part[i] = loss_fn(score[i], feat[i], target, log_var[i])[1]
+                loss_part[i] = loss_fn(score[i], feat[i], target, log_var[i])[0]
+                # if i == len(feat) - 1:
+                #     loss_part[i] = loss_fn(score[i], feat[i], target, log_var[i])[0]
+                # else:
+                #     loss_part[i] = loss_fn(score[i], feat[i], target, log_var[i])[1]
             else:
-                # loss_part[i] = loss_fn(score[i], feat[i], target)[0]
-                if i == len(feat) - 1:
-                    loss_part[i] = loss_fn(score[i], feat[i], target)[0]
-                else:
-                    loss_part[i] = loss_fn(score[i], feat[i], target)[1]
+                loss_part[i] = loss_fn(score[i], feat[i], target)[0]
+                # if i == len(feat) - 1:
+                #     loss_part[i] = loss_fn(score[i], feat[i], target)[0]
+                # else:
+                #     loss_part[i] = loss_fn(score[i], feat[i], target)[1]
             acc[i] = (score[i].max(1)[1] == target).float().mean()
         torch.autograd.backward(loss_part, ten)
         optimizer.step()

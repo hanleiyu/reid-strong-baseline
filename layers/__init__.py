@@ -42,6 +42,7 @@ def make_loss(cfg, num_classes):    # modified by gu
                     if cfg.MODEL.IF_UNCENTAINTY == 'on':
                         return [xent(score, target, log_var) + triplet(feat, target, log_var)[0], xent(score, target, log_var)]
                     else:
+                        # return xent(score, target) + triplet(feat, target)[0]
                         return [xent(score, target) + triplet(feat, target)[0], xent(score, target)]
                 else:
                     return [F.cross_entropy(score, target) + triplet(feat, target)[0], F.cross_entropy(score, target)]

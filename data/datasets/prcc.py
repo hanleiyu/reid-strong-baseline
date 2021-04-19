@@ -20,8 +20,8 @@ class PRCC(BaseImageDataset):
     def __init__(self, root='/home/yhl/data', verbose=True, **kwargs):
         super(PRCC, self).__init__()
         self.dataset_dir = osp.join(root, self.dataset_dir)
-        # self.train_dir = osp.join(self.dataset_dir, 'train')
-        self.train_dir = osp.join(self.dataset_dir, 'traincrop2')
+        self.train_dir = osp.join(self.dataset_dir, 'train')
+        # self.train_dir = osp.join(self.dataset_dir, 'traincrop2')
         self.query_dir = osp.join(self.dataset_dir, 'queryc')
         self.gallery_dir = osp.join(self.dataset_dir, 'gallery')
 
