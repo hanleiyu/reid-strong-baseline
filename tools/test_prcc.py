@@ -16,7 +16,7 @@ sys.path.append('.')
 from config import cfg
 from data import make_data_loader_prcc
 from engine.inference import prcc_inference
-from modeling import build_part_model
+from modeling import build_part_model, build_model
 from utils.logger import setup_logger
 
 
@@ -59,15 +59,16 @@ def main():
         os.environ['CUDA_VISIBLE_DEVICES'] = cfg.MODEL.DEVICE_ID
     cudnn.benchmark = True
 
-    model = build_part_model(cfg, 71)
+    model = build_model(cfg, 71)
+    # model = build_part_model(cfg, 71)
     model.load_param(cfg.TEST.WEIGHT)
     map = [0 for _ in range(10)]
     r1 = [0 for _ in range(10)]
     r5 = [0 for _ in range(10)]
     r10 = [0 for _ in range(10)]
     for i in range(10):
-        val_loader, num_query = make_data_loader_prcc(cfg, trial=i)
-        r1[i], r5[i], r10[i], map[i] = prcc_inference(cfg, model, val_loader, num_query)
+        val_loader, num_query, val_set = make_data_loader_prcc(cfg, trial=i)
+        r1[i], r5[i], r10[i], map[i] = prcc_inference(cfg, model, val_loader, num_query, val_set, index=i)
     logger.info("map: {:.1%}, r1: {:.1%}, r5: {:.1%}, r10: {:.1%}".format(mean(map), mean(r1), mean(r5), mean(r10)))
 
 if __name__ == '__main__':

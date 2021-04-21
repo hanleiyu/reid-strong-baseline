@@ -148,7 +148,9 @@ def prcc_inference(
         cfg,
         model,
         val_loader,
-        num_query
+        num_query,
+        val_set,
+        index
 ):
     device = cfg.MODEL.DEVICE
 
@@ -157,7 +159,7 @@ def prcc_inference(
     if cfg.TEST.RE_RANKING == 'no':
         print("Create evaluator")
         evaluator = part_evaluator(model, metrics={
-            'r1_mAP': R1_mAP(num_query, max_rank=50, feat_norm=cfg.TEST.FEAT_NORM)},
+            'r1_mAP': R1_mAP(num_query, val_set, index, max_rank=50, feat_norm=cfg.TEST.FEAT_NORM)},
                                                 device=device)
     elif cfg.TEST.RE_RANKING == 'yes':
         print("Create evaluator for reranking")

@@ -10,14 +10,17 @@ from ignite.metrics import Metric
 
 from data.datasets.eval_reid import eval_func
 from .re_ranking import re_ranking
+from .vis_result import visualize_ranked_results
 
 
 class R1_mAP(Metric):
-    def __init__(self, num_query, max_rank=50, feat_norm='yes'):
+    def __init__(self, num_query, val_set=[], index=0, max_rank=50, feat_norm='yes'):
         super(R1_mAP, self).__init__()
         self.num_query = num_query
         self.max_rank = max_rank
         self.feat_norm = feat_norm
+        self.val_set = val_set
+        self.index = index
 
     def reset(self):
         self.feats = []
@@ -49,7 +52,8 @@ class R1_mAP(Metric):
         distmat.addmm_(1, -2, qf, gf.t())
         distmat = distmat.cpu().numpy()
         cmc, mAP = eval_func(distmat, q_pids, g_pids, q_camids, g_camids)
-
+        if self.index == 1:
+            visualize_ranked_results(distmat, self.val_set.dataset, self.num_query, save_dir='/home/yhl/log/pic')
         return cmc, mAP
 
 

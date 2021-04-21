@@ -364,6 +364,7 @@ class Part(nn.Module):
         else:
             global_feat = self.base(x)
 
+            # global_feat = self.feature.gap(global_feat)
             global_feat = self.feature5.gap(global_feat)  # (b, 2048, 1, 1)
             global_feat = global_feat.view(global_feat.shape[0], -1)  # flatten to (bs, 2048)
 
@@ -372,6 +373,7 @@ class Part(nn.Module):
             elif self.neck == 'bnneck':
                 feat = self.feature5.bottleneck(global_feat)
                 # feat = self.bottleneck5(global_feat)
+                # feat = self.bottleneck(global_feat)
 
             if self.neck_feat == 'after':
                 # print("Test with feature after BN")

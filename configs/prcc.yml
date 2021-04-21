@@ -4,14 +4,14 @@ MODEL:
   METRIC_LOSS_TYPE: 'triplet'
   IF_LABELSMOOTH: 'on'
   IF_WITH_CENTER: 'no'
-  IF_UNCENTAINTY: 'on'
+  IF_UNCENTAINTY: 'off'
   IF_RESIZE: 'on'
 
 INPUT:
   SIZE_TRAIN: [256, 128]
   SIZE_TEST: [256, 128]
   PROB: 0.5 # random horizontal flip
-  RE_PROB: 0.5 # random erasing
+  RE_PROB: 0.0 # random erasing
   PADDING: 10
   PART: 5
 

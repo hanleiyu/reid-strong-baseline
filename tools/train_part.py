@@ -21,6 +21,7 @@ from solver import make_optimizer, WarmupMultiStepLR
 
 from utils.logger import setup_logger
 import random
+import datetime
 
 def setup_seed(seed):
     torch.manual_seed(seed)
@@ -112,10 +113,12 @@ def main():
     cfg.merge_from_list(args.opts)
     cfg.freeze()
 
-    output_dir = cfg.OUTPUT_DIR
+    output_dir = os.path.join(cfg.OUTPUT_DIR, datetime.now().strftime('%Y-%m-%d_%H:%M:%S'))
+
     if output_dir and not os.path.exists(output_dir):
         os.makedirs(output_dir)
-
+        os.makedirs(output_dir + '/code_backup')
+    os.system('cp -r /home/yhl/project/reid-strong-baseline/ ' + output_dir + '/code_backup')
     logger = setup_logger("reid_baseline", output_dir, 0)
     logger.info("Using {} GPUS".format(num_gpus))
     logger.info(args)
