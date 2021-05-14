@@ -8,7 +8,7 @@ import torch.nn.functional as F
 
 from .triplet_loss import TripletLoss, TripletLossUncertainty, CrossEntropyLabelSmooth, CrossEntropyLabelSmoothUncertainty
 from .center_loss import CenterLoss
-
+import torch
 
 def make_loss(cfg, num_classes):    # modified by gu
     sampler = cfg.DATALOADER.SAMPLER
@@ -45,7 +45,10 @@ def make_loss(cfg, num_classes):    # modified by gu
                         return xent(score, target) + triplet(feat, target)[0]
                         # return [xent(score, target) + triplet(feat, target)[0], xent(score, target)]
                 else:
-                    return [F.cross_entropy(score, target) + triplet(feat, target)[0], F.cross_entropy(score, target)]
+                    if cfg.MODEL.IF_UNCENTAINTY == 'on':
+                        return [torch.exp(-log_var).cuda() * F.cross_entropy(score, target) + log_var.cuda() + triplet(feat, target, log_var)[0], torch.exp(-log_var).cuda() * F.cross_entropy(score, target) + log_var.cuda()]
+                    else:
+                        return [F.cross_entropy(score, target) + triplet(feat, target)[0], F.cross_entropy(score, target)]
             else:
                 print('expected METRIC_LOSS_TYPE should be triplet'
                       'but got {}'.format(cfg.MODEL.METRIC_LOSS_TYPE))
