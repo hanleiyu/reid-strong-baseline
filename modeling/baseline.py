@@ -10,7 +10,7 @@ from torch import nn
 from .backbones.resnet import ResNet, BasicBlock, Bottleneck
 from .backbones.senet import SENet, SEResNetBottleneck, SEBottleneck, SEResNeXtBottleneck
 from .backbones.resnet_ibn_a import resnet50_ibn_a
-from .backbones.unet_model import UNet
+from .backbones.vit import vit_TransReID
 import numpy as np
 
 
@@ -328,6 +328,8 @@ class Part(nn.Module):
         self.classifier4 = ClassBlock(neck, self.num_classes, self.in_planes)
         self.classifier5 = ClassBlock(neck, self.num_classes, self.in_planes)
 
+        self.transformer = vit_TransReID()
+
     def forward(self, x, mask=None):
         if self.training:
             global_feat = self.base(x)
@@ -353,6 +355,9 @@ class Part(nn.Module):
             feats[2] = self.feature3(feats[2])
             feats[3] = self.feature4(feats[3])
             feats[4] = self.feature5(global_feat)
+
+            feat = self.transformer(feats)
+
             score[0] = self.classifier1(feats[0])
             score[1] = self.classifier2(feats[1])
             score[2] = self.classifier3(feats[2])
