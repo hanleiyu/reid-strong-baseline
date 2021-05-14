@@ -2,7 +2,7 @@ MODEL:
   PRETRAIN_CHOICE: 'imagenet'
   PRETRAIN_PATH: '/home/yhl/.torch/models/resnet50-19c8e357.pth'
   METRIC_LOSS_TYPE: 'triplet'
-  IF_LABELSMOOTH: 'no'
+  IF_LABELSMOOTH: 'off'
   IF_WITH_CENTER: 'no'
   IF_UNCENTAINTY: 'on'
   IF_RESIZE: 'on'
