@@ -12,7 +12,6 @@ INPUT:
   PROB: 0.5 # random horizontal flip
   RE_PROB: 1.0 # random erasing
   PADDING: 10
-  PART: 5
 
 DATASETS:
   NAMES: ('prcc')

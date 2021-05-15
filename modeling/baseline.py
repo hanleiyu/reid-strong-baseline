@@ -317,19 +317,21 @@ class Part(nn.Module):
         self.feature3 = FeatureBlock(self.in_planes)
         self.feature4 = FeatureBlock(self.in_planes)
         self.feature5 = FeatureBlock(self.in_planes)
+        self.feature6 = FeatureBlock(self.in_planes)
 
         self.classifier1 = ClassBlock(neck, self.num_classes, self.in_planes)
         self.classifier2 = ClassBlock(neck, self.num_classes, self.in_planes)
         self.classifier3 = ClassBlock(neck, self.num_classes, self.in_planes)
         self.classifier4 = ClassBlock(neck, self.num_classes, self.in_planes)
         self.classifier5 = ClassBlock(neck, self.num_classes, self.in_planes)
+        self.classifier6 = ClassBlock(neck, self.num_classes, self.in_planes)
 
         self.transformer = vit_TransReID()
 
     def forward(self, x, mask=None):
         global_feat = self.base(x)
         num = len(list(mask[0, :, 0, 0, 0]))
-        feats = [torch.zeros(128, 2048) for _ in range(num + 1)]
+        feats = [torch.zeros(128, 2048) for _ in range(num + 2)]
 
         for i in range(num):
             feats[i] = torch.mul(global_feat, mask[:, i, :, :, :].cuda())
@@ -346,26 +348,35 @@ class Part(nn.Module):
         feats[1] = self.feature2(feats[1])
         feats[2] = self.feature3(feats[2])
         feats[3] = self.feature4(feats[3])
-        # feats[4] = self.feature5(global_feat)
+
         feats[4] = self.feature5(vit_feat)
+        feats[5] = self.feature6(global_feat)
 
 
         if self.training:
             # score = self.classifier1(feats[4])
-            score = [torch.zeros(256) for _ in range(num + 1)]
-            score[0] = self.classifier1(feats[0])
-            score[1] = self.classifier2(feats[1])
-            score[2] = self.classifier3(feats[2])
-            score[3] = self.classifier4(feats[3])
-            score[4] = self.classifier5(feats[4])
-            return score, feats
+            # score = [torch.zeros(256) for _ in range(num + 2)]
+            # score[0] = self.classifier1(feats[0])
+            # score[1] = self.classifier2(feats[1])
+            # score[2] = self.classifier3(feats[2])
+            # score[3] = self.classifier4(feats[3])
+            # score[4] = self.classifier5(feats[4])
+            # score[5] = self.classifier6(feats[5])
+            # return score, feats
+
+            score = [torch.zeros(256) for _ in range(2)]
+            score[0] = self.classifier5(feats[4])
+            score[1] = self.classifier6(feats[5])
+
+            return score, (feats[4], feats[5])
             # return score, feats[4]
         else:
             if self.neck_feat == 'after':
                 return feats[4]
             else:
                 # return torch.cat((vit_feat, global_feat), 1)
-                return torch.cat((feats[4], global_feat), 1)
+                # return torch.cat((feats[4], global_feat), 1)
+                return torch.cat((feats[4], feats[5]), 1)
 
         # if self.training:
         #     global_feat = self.base(x)
