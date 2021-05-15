@@ -86,8 +86,8 @@ def visualize_ranked_results(
 
     for q_idx in range(num_q):
         #pdb.set_trace()
-        # qimg_path, qpid, qcamid, _ = query[q_idx]
-        qimg_path, qpid, qcamid = query[q_idx]
+        qimg_path, qpid, qcamid, _ = query[q_idx]
+        # qimg_path, qpid, qcamid = query[q_idx]
         qimg_path_name = qimg_path[0] if isinstance(
             qimg_path, (tuple, list)
         ) else qimg_path

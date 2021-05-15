@@ -52,8 +52,8 @@ class R1_mAP(Metric):
         distmat.addmm_(1, -2, qf, gf.t())
         distmat = distmat.cpu().numpy()
         cmc, mAP = eval_func(distmat, q_pids, g_pids, q_camids, g_camids)
-        if self.index == 1: visualize_ranked_results(distmat, self.val_set.dataset, self.num_query,
-        save_dir='/home/yhl/log/pic', topk=5)
+        # if self.index == 1: visualize_ranked_results(distmat, self.val_set.dataset, self.num_query,
+        # save_dir='/home/yhl/log/pic', topk=5)
         return cmc, mAP
 
 

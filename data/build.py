@@ -108,13 +108,13 @@ def make_data_loader_prcc(cfg, trial=0):
         pid_container.add(pid)
 
     gallery = []
-    # kps = torch.load('/home/yhl/data/prcc/rgb/people/maskg.pt')
+    kps = torch.load('/home/yhl/data/prcc/rgb/part4n/maskg.pt')
     for img_path in img_paths:
         pid = int(img_path.split("/")[-1][:3])
         camid = img_path.split("/")[-1][4]
-        # mask = kps[img_path.split("/")[-1][:-4]]
-        # gallery.append((img_path, pid, camid, mask))
-        gallery.append((img_path, pid, camid))
+        mask = kps[img_path.split("/")[-1][:-4]]
+        gallery.append((img_path, pid, camid, mask))
+        # gallery.append((img_path, pid, camid))
 
     img_paths = glob.glob(osp.join('/home/yhl/data/prcc/rgb/queryc', '*.jpg'))
     pid_container = set()
@@ -125,13 +125,13 @@ def make_data_loader_prcc(cfg, trial=0):
         pid_container.add(pid)
 
     query = []
-    # kps = torch.load('/home/yhl/data/prcc/rgb/people/maskq.pt')
+    kps = torch.load('/home/yhl/data/prcc/rgb/part4n/maskq.pt')
     for img_path in img_paths:
         pid = int(img_path.split("/")[-1][:3])
         camid = img_path.split("/")[-1][4]
-        # mask = kps[img_path.split("/")[-1][:-4]]
-        # query.append((img_path, pid, camid, mask))
-        query.append((img_path, pid, camid))
+        mask = kps[img_path.split("/")[-1][:-4]]
+        query.append((img_path, pid, camid, mask))
+        # query.append((img_path, pid, camid))
 
     val_set = ImageDatasetPart(query + gallery, transform=val_transforms)
 

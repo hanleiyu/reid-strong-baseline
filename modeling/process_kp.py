@@ -322,7 +322,7 @@ def cal_kp(path):
         mask = torch.stack((m5, m7, m8, m9), 0)
         # c = [c1, c2, c5, c6, c7, m8]
         # mask = torch.unsqueeze(m11, 0)
-        mask = mask.numpy()
+        # mask = mask.numpy()
         dictionary.update({img: mask})
         # dictionary.update({img: {"mask":mask, "confidence":c}})
     return dictionary
