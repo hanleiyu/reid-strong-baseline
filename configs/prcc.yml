@@ -4,8 +4,7 @@ MODEL:
   METRIC_LOSS_TYPE: 'triplet'
   IF_LABELSMOOTH: 'off'
   IF_WITH_CENTER: 'no'
-  IF_UNCENTAINTY: 'no'
-  IF_RESIZE: 'on'
+  IF_UNCENTAINTY: 'on'
 
 INPUT:
   SIZE_TRAIN: [256, 128]

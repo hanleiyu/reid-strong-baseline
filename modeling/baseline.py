@@ -213,7 +213,7 @@ class Baseline(nn.Module):
 class Part(nn.Module):
     in_planes = 2048
 
-    def __init__(self, num_classes, last_stride, model_path, neck, neck_feat, model_name, pretrain_choice, resize):
+    def __init__(self, num_classes, last_stride, model_path, neck, neck_feat, model_name, pretrain_choice):
         super(Part, self).__init__()
         if model_name == 'resnet18':
             self.in_planes = 512
@@ -311,7 +311,6 @@ class Part(nn.Module):
         self.num_classes = num_classes
         self.neck = neck
         self.neck_feat = neck_feat
-        self.resize = resize
 
         self.feature1 = FeatureBlock(self.in_planes)
         self.feature2 = FeatureBlock(self.in_planes)
@@ -332,11 +331,10 @@ class Part(nn.Module):
         num = len(list(mask[0, :, 0, 0, 0]))
         feats = [torch.zeros(128, 2048) for _ in range(num + 1)]
 
-        if self.resize == "on":
-            for i in range(num):
-                feats[i] = torch.mul(global_feat, mask[:, i, :, :, :].cuda())
-                feats[i] = self.gap(feats[i])
-                feats[i] = feats[i].view(feats[i].shape[0], -1)
+        for i in range(num):
+            feats[i] = torch.mul(global_feat, mask[:, i, :, :, :].cuda())
+            feats[i] = self.gap(feats[i])
+            feats[i] = feats[i].view(feats[i].shape[0], -1)
 
         global_feat = self.gap(global_feat)
         global_feat = global_feat.view(global_feat.shape[0], -1)
@@ -353,15 +351,21 @@ class Part(nn.Module):
 
 
         if self.training:
-            score = self.classifier1(feats[4])
-            return score, feats[4]
+            # score = self.classifier1(feats[4])
+            score = [torch.zeros(256) for _ in range(num + 1)]
+            score[0] = self.classifier1(feats[0])
+            score[1] = self.classifier2(feats[1])
+            score[2] = self.classifier3(feats[2])
+            score[3] = self.classifier4(feats[3])
+            score[4] = self.classifier5(feats[4])
+            return score, feats
+            # return score, feats[4]
         else:
             if self.neck_feat == 'after':
-                # print("Test with feature after BN")
                 return feats[4]
             else:
-                # print("Test with feature before BN")
-                return vit_feat
+                # return torch.cat((vit_feat, global_feat), 1)
+                return torch.cat((feats[4], global_feat), 1)
 
         # if self.training:
         #     global_feat = self.base(x)
@@ -369,9 +373,8 @@ class Part(nn.Module):
         #     feats = [torch.zeros(128, 2048) for _ in range(num + 1)]
         #     # score = [torch.zeros(256) for _ in range(num + 1)]
         #
-        #     if self.resize == "on":
-        #         for i in range(num):
-        #             feats[i] = torch.mul(global_feat, mask[:, i, :, :, :].cuda())
+    #         for i in range(num):
+    #             feats[i] = torch.mul(global_feat, mask[:, i, :, :, :].cuda())
         #
         #     # global_feat = self.gap(global_feat)  # (b, 2048, 1, 1)
         #     # global_feat = global_feat.view(global_feat.shape[0], -1)  # flatten to (bs, 2048)
