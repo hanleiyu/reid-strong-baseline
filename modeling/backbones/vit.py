@@ -110,13 +110,9 @@ default_cfgs = {
     'vit_base_resnet50d_224': _cfg(),
 }
 
-class GELU(nn.Module):
-    def forward(self, input: Tensor) -> Tensor:
-        return F.gelu(input)
-
 
 class Mlp(nn.Module):
-    def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=GELU(), drop=0.):
+    def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
         super().__init__()
         out_features = out_features or in_features
         hidden_features = hidden_features or in_features
@@ -165,7 +161,7 @@ class Attention(nn.Module):
 class Block(nn.Module):
 
     def __init__(self, dim, num_heads, mlp_ratio=4., qkv_bias=False, qk_scale=None, drop=0., attn_drop=0.,
-                 drop_path=0., act_layer=GELU(), norm_layer=nn.LayerNorm):
+                 drop_path=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm):
         super().__init__()
         self.norm1 = norm_layer(dim)
         self.attn = Attention(
@@ -261,9 +257,9 @@ def resize_pos_embed(posemb, posemb_new, hight, width):
     return posemb
 
 
-def vit_TransReID(drop_rate=0.0, attn_drop_rate=0.0, drop_path_rate=0.1,sie_xishu=1.5, **kwargs):
+def vit_TransReID(drop_rate=0.0, attn_drop_rate=0.0, drop_path_rate=0.1, **kwargs):
     model = TransReID(
-        embed_dim=768, depth=2, num_heads=12, mlp_ratio=4, qkv_bias=True,
+        embed_dim=2048, depth=2, num_heads=8, mlp_ratio=4, qkv_bias=True,
         drop_path_rate=drop_path_rate, drop_rate=drop_rate, attn_drop_rate=attn_drop_rate,
         norm_layer=partial(nn.LayerNorm, eps=1e-6), **kwargs)
 

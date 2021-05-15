@@ -335,7 +335,7 @@ class Part(nn.Module):
             global_feat = self.base(x)
             num = len(list(mask[0, :, 0, 0, 0]))
             feats = [torch.zeros(128, 2048) for _ in range(num + 1)]
-            score = [torch.zeros(256) for _ in range(num + 1)]
+            # score = [torch.zeros(256) for _ in range(num + 1)]
 
             if self.resize == "on":
                 for i in range(num):
@@ -356,15 +356,18 @@ class Part(nn.Module):
             feats[3] = self.feature4(feats[3])
             feats[4] = self.feature5(global_feat)
 
-            feat = self.transformer(feats)
+            f = torch.stack((feats[0], feats[1], feats[2], feats[3], feats[4]), 1)
+            feat = self.transformer(f)
+            score = self.classifier1(feat)
 
-            score[0] = self.classifier1(feats[0])
-            score[1] = self.classifier2(feats[1])
-            score[2] = self.classifier3(feats[2])
-            score[3] = self.classifier4(feats[3])
-            score[4] = self.classifier5(feats[4])
 
-            return score, feats  # global feature for triplet loss
+            # score[0] = self.classifier1(feats[0])
+            # score[1] = self.classifier2(feats[1])
+            # score[2] = self.classifier3(feats[2])
+            # score[3] = self.classifier4(feats[3])
+            # score[4] = self.classifier5(feats[4])
+            # return score, feats  # global feature for triplet loss
+            return score, feat
 
         else:
             global_feat = self.base(x)
