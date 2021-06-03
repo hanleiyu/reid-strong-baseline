@@ -11,6 +11,7 @@ from .backbones.resnet import ResNet, BasicBlock, Bottleneck
 from .backbones.senet import SENet, SEResNetBottleneck, SEBottleneck, SEResNeXtBottleneck
 from .backbones.resnet_ibn_a import resnet50_ibn_a
 from .backbones.vit import vit_TransReID
+from .model_keypoints import ScoremapComputer
 import numpy as np
 
 
@@ -191,6 +192,13 @@ class Baseline(nn.Module):
         elif self.neck == 'bnneck':
             feat = self.bottleneck(global_feat)  # normalize for angular softmax
 
+        # if self.neck_feat == 'after':
+        #     # print("Test with feature after BN")
+        #     return feat
+        # else:
+        #     # print("Test with feature before BN")
+        #     return global_feat
+
         if self.training:
             cls_score = self.classifier(feat)
             return cls_score, global_feat  # global feature for triplet loss
@@ -215,93 +223,10 @@ class Part(nn.Module):
 
     def __init__(self, num_classes, last_stride, model_path, neck, neck_feat, model_name, pretrain_choice):
         super(Part, self).__init__()
-        if model_name == 'resnet18':
-            self.in_planes = 512
-            self.base = ResNet(last_stride=last_stride,
-                               block=BasicBlock,
-                               layers=[2, 2, 2, 2])
-        elif model_name == 'resnet34':
-            self.in_planes = 512
-            self.base = ResNet(last_stride=last_stride,
-                               block=BasicBlock,
-                               layers=[3, 4, 6, 3])
-        elif model_name == 'resnet50':
+        if model_name == 'resnet50':
             self.base = ResNet(last_stride=last_stride,
                                block=Bottleneck,
                                layers=[3, 4, 6, 3])
-        elif model_name == 'resnet101':
-            self.base = ResNet(last_stride=last_stride,
-                               block=Bottleneck,
-                               layers=[3, 4, 23, 3])
-        elif model_name == 'resnet152':
-            self.base = ResNet(last_stride=last_stride,
-                               block=Bottleneck,
-                               layers=[3, 8, 36, 3])
-
-        elif model_name == 'se_resnet50':
-            self.base = SENet(block=SEResNetBottleneck,
-                              layers=[3, 4, 6, 3],
-                              groups=1,
-                              reduction=16,
-                              dropout_p=None,
-                              inplanes=64,
-                              input_3x3=False,
-                              downsample_kernel_size=1,
-                              downsample_padding=0,
-                              last_stride=last_stride)
-        elif model_name == 'se_resnet101':
-            self.base = SENet(block=SEResNetBottleneck,
-                              layers=[3, 4, 23, 3],
-                              groups=1,
-                              reduction=16,
-                              dropout_p=None,
-                              inplanes=64,
-                              input_3x3=False,
-                              downsample_kernel_size=1,
-                              downsample_padding=0,
-                              last_stride=last_stride)
-        elif model_name == 'se_resnet152':
-            self.base = SENet(block=SEResNetBottleneck,
-                              layers=[3, 8, 36, 3],
-                              groups=1,
-                              reduction=16,
-                              dropout_p=None,
-                              inplanes=64,
-                              input_3x3=False,
-                              downsample_kernel_size=1,
-                              downsample_padding=0,
-                              last_stride=last_stride)
-        elif model_name == 'se_resnext50':
-            self.base = SENet(block=SEResNeXtBottleneck,
-                              layers=[3, 4, 6, 3],
-                              groups=32,
-                              reduction=16,
-                              dropout_p=None,
-                              inplanes=64,
-                              input_3x3=False,
-                              downsample_kernel_size=1,
-                              downsample_padding=0,
-                              last_stride=last_stride)
-        elif model_name == 'se_resnext101':
-            self.base = SENet(block=SEResNeXtBottleneck,
-                              layers=[3, 4, 23, 3],
-                              groups=32,
-                              reduction=16,
-                              dropout_p=None,
-                              inplanes=64,
-                              input_3x3=False,
-                              downsample_kernel_size=1,
-                              downsample_padding=0,
-                              last_stride=last_stride)
-        elif model_name == 'senet154':
-            self.base = SENet(block=SEBottleneck,
-                              layers=[3, 8, 36, 3],
-                              groups=64,
-                              reduction=16,
-                              dropout_p=0.2,
-                              last_stride=last_stride)
-        elif model_name == 'resnet50_ibn_a':
-            self.base = resnet50_ibn_a(last_stride)
 
         if pretrain_choice == 'imagenet':
             self.base.load_param(model_path)
@@ -328,8 +253,16 @@ class Part(nn.Module):
 
         self.transformer = vit_TransReID()
 
+        # keypoints model
+        self.scoremap_computer = ScoremapComputer(self.config.norm_scale).to(self.device)
+        # self.scoremap_computer = nn.DataParallel(self.scoremap_computer).to(self.device)
+        self.scoremap_computer = self.scoremap_computer.eval()
+
     def forward(self, x, mask=None):
         global_feat = self.base(x)
+        # with torch.no_grad():
+        #     score_maps, keypoints_confidence, _ = self.scoremap_computer(x)
+
         num = len(list(mask[0, :, 0, 0, 0]))
         feats = [torch.zeros(128, 2048) for _ in range(num + 2)]
 
@@ -352,6 +285,12 @@ class Part(nn.Module):
         feats[4] = self.feature5(vit_feat)
         feats[5] = self.feature6(global_feat)
 
+        # if self.neck_feat == 'after':
+        #     return feats[4]
+        # else:
+        #     # return torch.cat((vit_feat, global_feat), 1)
+        #     # return torch.cat((feats[4], global_feat), 1)
+        #     return torch.cat((feats[4], feats[5]), 1)
 
         if self.training:
             # score = self.classifier1(feats[4])

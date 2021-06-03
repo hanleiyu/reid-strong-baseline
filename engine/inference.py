@@ -96,7 +96,8 @@ def part_evaluator(model, metrics,
         model.to(device)
 
     def _inference(engine, batch):
-        model.eval()
+        # model.eval()
+        # model.train()
         with torch.no_grad():
             data, pids, camids, mask = batch
             # data, pids, camids = batch
