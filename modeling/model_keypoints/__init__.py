@@ -26,7 +26,7 @@ class ScoremapComputer(nn.Module):
         return scoremap.detach(), keypoints_confidence.detach(), keypoints_location.detach()
 
 
-def compute_local_features(config, feature_maps, score_maps, keypoints_confidence):
+def compute_local_features(feature_maps, score_maps, keypoints_confidence):
     '''
     the last one is global feature
     :param config:
@@ -54,8 +54,8 @@ def compute_local_features(config, feature_maps, score_maps, keypoints_confidenc
 
     # compute keypoints confidence
     keypoints_confidence[:, sc:] = F.normalize(
-        keypoints_confidence[:, sc:], 1, 1) * config.weight_global_feature  # global feature score_confidence
+        keypoints_confidence[:, sc:], 1, 1)  # global feature score_confidence
     keypoints_confidence[:, :sc] = F.normalize(keypoints_confidence[:, :sc], 1,
-                                               1) * config.weight_global_feature  # partial feature score_confidence
+                                               1)  # partial feature score_confidence
 
     return feature_vector_list, keypoints_confidence

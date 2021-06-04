@@ -53,15 +53,15 @@ def make_data_loader(cfg):
 
 
 def make_data_loader_part(cfg):
-    # train_transforms = build_transforms(cfg, is_train=True)
+    train_transforms = build_transforms(cfg, is_train=True)
     val_transforms = build_transforms(cfg, is_train=False)
     num_workers = cfg.DATALOADER.NUM_WORKERS
 
     dataset = init_dataset(cfg.DATASETS.NAMES, root=cfg.DATASETS.ROOT_DIR)
 
     num_classes = dataset.num_train_pids
-    # train_set = ImageDatasetPart(dataset.train, transform=train_transforms)
-    train_set = ImageDatasetPart(dataset.train, cfg)
+    train_set = ImageDatasetPart(dataset.train, transform=train_transforms)
+    # train_set = ImageDatasetPart(dataset.train, cfg)
 
     if cfg.DATALOADER.SAMPLER == 'softmax':
         train_loader = DataLoader(
@@ -112,9 +112,9 @@ def make_data_loader_prcc(cfg, trial=0):
     for img_path in img_paths:
         pid = int(img_path.split("/")[-1][:3])
         camid = img_path.split("/")[-1][4]
-        mask = kps[img_path.split("/")[-1][:-4]]
-        gallery.append((img_path, pid, camid, mask))
-        # gallery.append((img_path, pid, camid))
+        # mask = kps[img_path.split("/")[-1][:-4]]/
+        # gallery.append((img_path, pid, camid, mask))
+        gallery.append((img_path, pid, camid))
 
     img_paths = glob.glob(osp.join('/home/yhl/data/prcc/rgb/queryc', '*.jpg'))
     pid_container = set()
@@ -129,9 +129,9 @@ def make_data_loader_prcc(cfg, trial=0):
     for img_path in img_paths:
         pid = int(img_path.split("/")[-1][:3])
         camid = img_path.split("/")[-1][4]
-        mask = kps[img_path.split("/")[-1][:-4]]
-        query.append((img_path, pid, camid, mask))
-        # query.append((img_path, pid, camid))
+        # mask = kps[img_path.split("/")[-1][:-4]]
+        # query.append((img_path, pid, camid, mask))
+        query.append((img_path, pid, camid))
 
     val_set = ImageDatasetPart(query + gallery, transform=val_transforms)
 

@@ -188,7 +188,7 @@ class TransReID(nn.Module):
 
         self.num_features = self.embed_dim = embed_dim  # num_features for consistency with other models
 
-        num_patches = 5
+        num_patches = 14
 
         self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
         self.pos_embed = nn.Parameter(torch.zeros(1, num_patches + 1, embed_dim))

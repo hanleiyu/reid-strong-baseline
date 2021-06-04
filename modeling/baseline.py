@@ -11,7 +11,7 @@ from .backbones.resnet import ResNet, BasicBlock, Bottleneck
 from .backbones.senet import SENet, SEResNetBottleneck, SEBottleneck, SEResNeXtBottleneck
 from .backbones.resnet_ibn_a import resnet50_ibn_a
 from .backbones.vit import vit_TransReID
-from .model_keypoints import ScoremapComputer
+from .model_keypoints import ScoremapComputer, compute_local_features
 import numpy as np
 
 
@@ -254,43 +254,26 @@ class Part(nn.Module):
         self.transformer = vit_TransReID()
 
         # keypoints model
-        self.scoremap_computer = ScoremapComputer(self.config.norm_scale).to(self.device)
+        self.scoremap_computer = ScoremapComputer(10).cuda()
         # self.scoremap_computer = nn.DataParallel(self.scoremap_computer).to(self.device)
         self.scoremap_computer = self.scoremap_computer.eval()
 
     def forward(self, x, mask=None):
         global_feat = self.base(x)
-        # with torch.no_grad():
-        #     score_maps, keypoints_confidence, _ = self.scoremap_computer(x)
+        with torch.no_grad():
+            score_maps, keypoints_confidence, _ = self.scoremap_computer(x)
+        feature_vector_list, keypoints_confidence = compute_local_features(
+            global_feat, score_maps, keypoints_confidence)
 
-        num = len(list(mask[0, :, 0, 0, 0]))
-        feats = [torch.zeros(128, 2048) for _ in range(num + 2)]
+        # f = torch.stack((feature_vector_list[0], feature_vector_list[1], feature_vector_list[2], feature_vector_list[3],
+        #                  feature_vector_list[4], feature_vector_list[5], feature_vector_list[6], feature_vector_list[7],
+        #                  feature_vector_list[8], feature_vector_list[9], feature_vector_list[10], feature_vector_list[11],
+        #                  feature_vector_list[12], feature_vector_list[13]), 1)
 
-        for i in range(num):
-            feats[i] = torch.mul(global_feat, mask[:, i, :, :, :].cuda())
-            feats[i] = self.gap(feats[i])
-            feats[i] = feats[i].view(feats[i].shape[0], -1)
-
-        global_feat = self.gap(global_feat)
-        global_feat = global_feat.view(global_feat.shape[0], -1)
-
-        f = torch.stack((feats[0], feats[1], feats[2], feats[3], global_feat), 1)
+        bs, keypoints_num = keypoints_confidence.shape
+        keypoints_confidence = keypoints_confidence.unsqueeze(2).repeat([1, 1, 2048])
+        f = keypoints_confidence * torch.stack(feature_vector_list, 1)
         vit_feat = self.transformer(f)
-
-        feats[0] = self.feature1(feats[0])
-        feats[1] = self.feature2(feats[1])
-        feats[2] = self.feature3(feats[2])
-        feats[3] = self.feature4(feats[3])
-
-        feats[4] = self.feature5(vit_feat)
-        feats[5] = self.feature6(global_feat)
-
-        # if self.neck_feat == 'after':
-        #     return feats[4]
-        # else:
-        #     # return torch.cat((vit_feat, global_feat), 1)
-        #     # return torch.cat((feats[4], global_feat), 1)
-        #     return torch.cat((feats[4], feats[5]), 1)
 
         if self.training:
             # score = self.classifier1(feats[4])
@@ -304,18 +287,18 @@ class Part(nn.Module):
             # return score, feats
 
             score = [torch.zeros(256) for _ in range(2)]
-            score[0] = self.classifier5(feats[4])
-            score[1] = self.classifier6(feats[5])
+            score[0] = self.classifier5(feature_vector_list[13])
+            score[1] = self.classifier6(vit_feat)
 
-            return score, (feats[4], feats[5])
+            return score, (feature_vector_list[13], vit_feat)
             # return score, feats[4]
         else:
             if self.neck_feat == 'after':
-                return feats[4]
+                return feature_vector_list[13]
             else:
                 # return torch.cat((vit_feat, global_feat), 1)
                 # return torch.cat((feats[4], global_feat), 1)
-                return torch.cat((feats[4], feats[5]), 1)
+                return torch.cat((feature_vector_list[13], vit_feat), 1)
 
         # if self.training:
         #     global_feat = self.base(x)
@@ -323,8 +306,8 @@ class Part(nn.Module):
         #     feats = [torch.zeros(128, 2048) for _ in range(num + 1)]
         #     # score = [torch.zeros(256) for _ in range(num + 1)]
         #
-    #         for i in range(num):
-    #             feats[i] = torch.mul(global_feat, mask[:, i, :, :, :].cuda())
+        #     for i in range(num):
+        #         feats[i] = torch.mul(global_feat, mask[:, i, :, :, :].cuda())
         #
         #     # global_feat = self.gap(global_feat)  # (b, 2048, 1, 1)
         #     # global_feat = global_feat.view(global_feat.shape[0], -1)  # flatten to (bs, 2048)
