@@ -124,7 +124,7 @@ def get_part_data(path, name):
 
     with open(path, 'rb') as f:
         params = json.load(f)
-        # params = params['people'][0]['pose_keypoints_2d']
+        params = params['people'][0]['pose_keypoints_2d']
         if len(params) > 0:
             if params[3 * n1 + 2] != 0 and params[3 * (n1 + 1) + 2] != 0:
                 t1 = [params[3 * n1], params[3 * n1 + 1]]
@@ -157,7 +157,7 @@ def get_thigh_data(path):
     c2 = 0
     with open(path, 'rb') as f:
         params = json.load(f)
-        # params = params['people'][0]['pose_keypoints_2d']
+        params = params['people'][0]['pose_keypoints_2d']
         if len(params) > 0:
             if params[3 * 8 + 2] != 0 and params[3 * 10 + 2] != 0:
                 t1 = [params[3 * 8], params[3 * 8 + 1]]
@@ -253,7 +253,7 @@ def cal_mask(p, h, w, a, b=0):
     elif a == "face":
         with open(p, 'rb') as f:
             params = json.load(f)
-            # params = params['people'][0]['pose_keypoints_2d']
+            params = params['people'][0]['pose_keypoints_2d']
             if len(params) > 0:
                 t = math.floor(params[3*1 + 1])
                 c = params[3*1+2]
@@ -338,7 +338,7 @@ def save_kp():
 
 
 data_path = "/home/yhl/data/prcc/rgb"
-save_kp()
+# save_kp()
 
 
 
@@ -404,7 +404,7 @@ def crop(path):
         image = cv2.imread(img)
         m = np.zeros((image.shape[0], image.shape[1]))
 
-        p = os.path.join(data_path, "kpo/train", img.split("/")[-1][:-4] + '_keypoints.json')
+        p = os.path.join(data_path, "kpo/test", img.split("/")[-1][:-4] + '_keypoints.json')
         pt1, pt2, _ = get_json_data(p, 1, 8)
         pt3, pt4, _ = get_json_data(p, 2, 5)
         for j in range(image.shape[0]):
@@ -415,7 +415,7 @@ def crop(path):
         cv2.imwrite(os.path.join(data_path, path+"crop2", img.split("/")[-1]), image)
 
 
-# crop("queryc")
+crop("queryc")
 # crop("gallery")
 # crop("train")
 
@@ -425,7 +425,7 @@ def cropnew(path):
         image = cv2.imread(img)
         m = np.zeros((image.shape[0], image.shape[1]))
 
-        p = os.path.join(data_path, "kpo/train", img.split("/")[-1][:-4] + '_keypoints.json')
+        p = os.path.join(data_path, "kpo/test", img.split("/")[-1][:-4] + '_keypoints.json')
         pt1, pt2, _ = get_json_data(p, 1, 8)
         pt3, pt4, _ = get_json_data(p, 2, 5)
         upmin = min(pt4[0], pt3[0])

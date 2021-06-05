@@ -265,12 +265,8 @@ class Part(nn.Module):
         feature_vector_list, keypoints_confidence = compute_local_features(
             global_feat, score_maps, keypoints_confidence)
 
-        # f = torch.stack((feature_vector_list[0], feature_vector_list[1], feature_vector_list[2], feature_vector_list[3],
-        #                  feature_vector_list[4], feature_vector_list[5], feature_vector_list[6], feature_vector_list[7],
-        #                  feature_vector_list[8], feature_vector_list[9], feature_vector_list[10], feature_vector_list[11],
-        #                  feature_vector_list[12], feature_vector_list[13]), 1)
+        # f = torch.stack(feature_vector_list, 1)
 
-        bs, keypoints_num = keypoints_confidence.shape
         keypoints_confidence = keypoints_confidence.unsqueeze(2).repeat([1, 1, 2048])
         f = keypoints_confidence * torch.stack(feature_vector_list, 1)
         vit_feat = self.transformer(f)

@@ -108,7 +108,7 @@ def make_data_loader_prcc(cfg, trial=0):
         pid_container.add(pid)
 
     gallery = []
-    kps = torch.load('/home/yhl/data/prcc/rgb/part4n/maskg.pt')
+    # kps = torch.load('/home/yhl/data/prcc/rgb/part4n/maskg.pt')
     for img_path in img_paths:
         pid = int(img_path.split("/")[-1][:3])
         camid = img_path.split("/")[-1][4]
@@ -125,7 +125,7 @@ def make_data_loader_prcc(cfg, trial=0):
         pid_container.add(pid)
 
     query = []
-    kps = torch.load('/home/yhl/data/prcc/rgb/part4n/maskq.pt')
+    # kps = torch.load('/home/yhl/data/prcc/rgb/part4n/maskq.pt')
     for img_path in img_paths:
         pid = int(img_path.split("/")[-1][:3])
         camid = img_path.split("/")[-1][4]

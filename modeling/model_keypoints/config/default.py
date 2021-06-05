@@ -50,6 +50,8 @@ _C.MODEL.EXTRA = MODEL_EXTRAS['pose_high_resolution_net']
 
 _C.MODEL.JOINTS_GROUPS = [[0, 1, 2, 3, 4], [5], [6], [7], [8], [9], [10], [11], [12], [13], [14], [15],
                           [16]]  # coco group 2
+# _C.MODEL.JOINTS_GROUPS = [[0, 1, 2, 3, 4], [5, 6], [7, 8, 9, 10],  [11, 12], [13, 14, 15, 16]]  # coco group 2
+
 # _C.MODEL.JOINTS_GROUPS = [[0,1,2,3,4,5,6],[5,7,9],[11,13,15],[6,8,10],[12,14,16],[5,6,11,12]] # coco group 3
 # _C.MODEL.JOINTS_GROUPS = [[0,1,2,3,4,5,6],[5,6,7,8,9,10,11,12],[11,12,13,14,15,16]] # coco group 2
 # _C.MODEL.JOINTS_GROUPS = [[0,1,2,3,4,5,6],[5,7,9],[11,13,15],[6,8,10],[12,14,16],[5,6,11,12]] # coco group 3 
