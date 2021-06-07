@@ -150,11 +150,10 @@ def main():
         os.makedirs(output_dir)
         os.makedirs(output_dir + '/code_backup')
 
-    os.system('cp -r ' + output_dir + '/code_backup')
+    os.system('cp -r /home/yhl/project/reid-strong-baseline/ ' + output_dir + '/code_backup')
     logger = setup_logger("reid_baseline", output_dir, 0)
     logger.info("Using {} GPUS".format(num_gpus))
     logger.info(args)
-    logger.info('cp -r /home/yhl/project/reid-strong-baseline/ ' + output_dir + '/code_backup')
 
     if args.config_file != "":
         logger.info("Loaded configuration file {}".format(args.config_file))

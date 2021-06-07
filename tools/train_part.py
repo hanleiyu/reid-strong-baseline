@@ -118,7 +118,7 @@ def main():
     if output_dir and not os.path.exists(output_dir):
         os.makedirs(output_dir)
         os.makedirs(output_dir + '/code_backup')
-    os.system('cp -r ' + output_dir + '/code_backup')
+    os.system('cp -r /home/yhl/project/reid-strong-baseline/ ' + output_dir + '/code_backup')
     logger = setup_logger("reid_baseline", output_dir, 0)
     logger.info("Using {} GPUS".format(num_gpus))
     logger.info(args)

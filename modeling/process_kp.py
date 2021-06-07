@@ -415,7 +415,7 @@ def crop(path):
         cv2.imwrite(os.path.join(data_path, path+"crop2", img.split("/")[-1]), image)
 
 
-crop("queryc")
+# crop("queryc")
 # crop("gallery")
 # crop("train")
 
@@ -425,7 +425,7 @@ def cropnew(path):
         image = cv2.imread(img)
         m = np.zeros((image.shape[0], image.shape[1]))
 
-        p = os.path.join(data_path, "kpo/test", img.split("/")[-1][:-4] + '_keypoints.json')
+        p = os.path.join(data_path, "kpo/val", img.split("/")[-1][:-4] + '_keypoints.json')
         pt1, pt2, _ = get_json_data(p, 1, 8)
         pt3, pt4, _ = get_json_data(p, 2, 5)
         upmin = min(pt4[0], pt3[0])
@@ -476,6 +476,7 @@ def cropnew(path):
 # cropnew("queryc")
 # cropnew("gallery")
 # cropnew("train")
+# cropnew("val")
 
 
 # imgs = Image.open("/home/yhl/data/prcc/rgb/train/113_C_cropped_rgb253.jpg")
