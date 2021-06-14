@@ -10,7 +10,7 @@ from torch import nn
 from .backbones.resnet import ResNet, BasicBlock, Bottleneck
 from .backbones.senet import SENet, SEResNetBottleneck, SEBottleneck, SEResNeXtBottleneck
 from .backbones.resnet_ibn_a import resnet50_ibn_a
-from .backbones.vit import vit_TransReID
+from .backbones.vit import vit_TransReID, vit_TransReID2
 from .model_keypoints import ScoremapComputer, compute_local_features
 import numpy as np
 
@@ -50,6 +50,21 @@ class FeatureBlock(nn.Module):
         x = self.bottleneck(x)
         return x
 
+
+class ClassBlock(nn.Module):
+    def __init__(self, neck, num_classes, in_planes):
+        super(ClassBlock, self).__init__()
+        self.num_classes = num_classes
+        self.in_planes = in_planes
+        if neck == 'no':
+            self.classifier = nn.Linear(self.in_planes, self.num_classes)
+        elif neck == 'bnneck':
+            self.classifier = nn.Linear(self.in_planes, self.num_classes, bias=False)
+            self.classifier.apply(weights_init_classifier)
+
+    def forward(self, x):
+        score = self.classifier(x)
+        return score
 
 class ClassBlock(nn.Module):
     def __init__(self, neck, num_classes, in_planes):
@@ -249,9 +264,11 @@ class Part(nn.Module):
         self.classifier3 = ClassBlock(neck, self.num_classes, self.in_planes)
         self.classifier4 = ClassBlock(neck, self.num_classes, self.in_planes)
         self.classifier5 = ClassBlock(neck, self.num_classes, self.in_planes)
-        self.classifier6 = ClassBlock(neck, self.num_classes, self.in_planes)
+        # self.classifier6 = ClassBlock(neck, self.num_classes, self.in_planes)
+        self.classifier6 = ClassBlock(neck, self.num_classes, 3048)
 
         self.transformer = vit_TransReID()
+        self.transformer2 = vit_TransReID2()
 
         # keypoints model
         self.scoremap_computer = ScoremapComputer(10).cuda()
@@ -261,7 +278,7 @@ class Part(nn.Module):
     def forward(self, x, mask=None):
         global_feat = self.base(x)
         with torch.no_grad():
-            score_maps, keypoints_confidence, _ = self.scoremap_computer(x)
+            score_maps, keypoints_confidence, keypoints_location = self.scoremap_computer(x)
         feature_vector_list, keypoints_confidence = compute_local_features(
             global_feat, score_maps, keypoints_confidence)
 
@@ -270,6 +287,10 @@ class Part(nn.Module):
         keypoints_confidence = keypoints_confidence.unsqueeze(2).repeat([1, 1, 2048])
         f = keypoints_confidence * torch.stack(feature_vector_list, 1)
         vit_feat = self.transformer(f)
+
+        key = torch.zeros((keypoints_location.size()[0], 17, 998))
+        k = torch.cat((keypoints_location, key), 2).cuda()
+        key_feat = self.transformer2(k)
 
         if self.training:
             # score = self.classifier1(feats[4])
@@ -283,18 +304,21 @@ class Part(nn.Module):
             # return score, feats
 
             score = [torch.zeros(256) for _ in range(2)]
-            score[0] = self.classifier5(feature_vector_list[13])
-            score[1] = self.classifier6(vit_feat)
+            score[0] = self.classifier5(feature_vector_list[-1])
+            # score[1] = self.classifier6(vit_feat)
+            score[1] = self.classifier6(torch.cat((vit_feat, key_feat), 1))
 
-            return score, (feature_vector_list[13], vit_feat)
+            return score, (feature_vector_list[-1], torch.cat((vit_feat, key_feat), 1))
+            # return score, (feature_vector_list[-1], vit_feat)
             # return score, feats[4]
         else:
             if self.neck_feat == 'after':
-                return feature_vector_list[13]
+                return feature_vector_list[-1]
             else:
                 # return torch.cat((vit_feat, global_feat), 1)
                 # return torch.cat((feats[4], global_feat), 1)
-                return torch.cat((feature_vector_list[13], vit_feat), 1)
+                # return torch.cat((feature_vector_list[-1], vit_feat), 1)
+                return torch.cat((feature_vector_list[-1], vit_feat, key_feat), 1)
 
         # if self.training:
         #     global_feat = self.base(x)

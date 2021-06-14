@@ -181,14 +181,12 @@ class Block(nn.Module):
 class TransReID(nn.Module):
     """ Transformer-based Object Re-Identification
     """
-    def __init__(self, embed_dim=2048, depth=12,
+    def __init__(self, num_patches, embed_dim=2048, depth=12,
                  num_heads=12, mlp_ratio=4., qkv_bias=False, qk_scale=None, drop_rate=0., attn_drop_rate=0.,
                  drop_path_rate=0.,  norm_layer=nn.LayerNorm):
         super().__init__()
 
         self.num_features = self.embed_dim = embed_dim  # num_features for consistency with other models
-
-        num_patches = 14
 
         self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
         self.pos_embed = nn.Parameter(torch.zeros(1, num_patches + 1, embed_dim))
@@ -259,12 +257,19 @@ def resize_pos_embed(posemb, posemb_new, hight, width):
 
 def vit_TransReID(drop_rate=0.0, attn_drop_rate=0.0, drop_path_rate=0.1, **kwargs):
     model = TransReID(
-        embed_dim=2048, depth=2, num_heads=8, mlp_ratio=4, qkv_bias=True,
+        num_patches=15, embed_dim=2048, depth=2, num_heads=8, mlp_ratio=4, qkv_bias=True,
         drop_path_rate=drop_path_rate, drop_rate=drop_rate, attn_drop_rate=attn_drop_rate,
         norm_layer=partial(nn.LayerNorm, eps=1e-6), **kwargs)
 
     return model
 
+def vit_TransReID2(drop_rate=0.0, attn_drop_rate=0.0, drop_path_rate=0.1, **kwargs):
+    model = TransReID(
+        num_patches=17, embed_dim=1000, depth=2, num_heads=4, mlp_ratio=4, qkv_bias=True,
+        drop_path_rate=drop_path_rate, drop_rate=drop_rate, attn_drop_rate=attn_drop_rate,
+        norm_layer=partial(nn.LayerNorm, eps=1e-6), **kwargs)
+
+    return model
 
 def _no_grad_trunc_normal_(tensor, mean, std, a, b):
     # Cut & paste from PyTorch official master until it's in a few official releases - RW

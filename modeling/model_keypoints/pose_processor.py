@@ -125,7 +125,7 @@ class HeatmapProcessor2:
             heatmap = torch.sum(x[:, self.groups[0]], dim=1, keepdim=True)
             max_response_2 = torch.mean(max_response[:, self.groups[0]], dim=1, keepdim=True)
 
-            for i in range(1, len(self.groups)):
+            for i in range(0, len(self.groups)):
                 heatmapi = torch.sum(x[:, self.groups[i]], dim=1, keepdim=True)
                 heatmap = torch.cat((heatmap, heatmapi), dim=1)
 
