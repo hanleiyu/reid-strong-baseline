@@ -265,7 +265,7 @@ def vit_TransReID(drop_rate=0.0, attn_drop_rate=0.0, drop_path_rate=0.1, **kwarg
 
 def vit_TransReID2(drop_rate=0.0, attn_drop_rate=0.0, drop_path_rate=0.1, **kwargs):
     model = TransReID(
-        num_patches=17, embed_dim=1000, depth=2, num_heads=4, mlp_ratio=4, qkv_bias=True,
+        num_patches=17, embed_dim=100, depth=2, num_heads=4, mlp_ratio=4, qkv_bias=True,
         drop_path_rate=drop_path_rate, drop_rate=drop_rate, attn_drop_rate=attn_drop_rate,
         norm_layer=partial(nn.LayerNorm, eps=1e-6), **kwargs)
 

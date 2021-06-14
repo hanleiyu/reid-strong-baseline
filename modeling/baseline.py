@@ -264,8 +264,9 @@ class Part(nn.Module):
         self.classifier3 = ClassBlock(neck, self.num_classes, self.in_planes)
         self.classifier4 = ClassBlock(neck, self.num_classes, self.in_planes)
         self.classifier5 = ClassBlock(neck, self.num_classes, self.in_planes)
-        # self.classifier6 = ClassBlock(neck, self.num_classes, self.in_planes)
-        self.classifier6 = ClassBlock(neck, self.num_classes, 3048)
+        self.classifier6 = ClassBlock(neck, self.num_classes, self.in_planes)
+        # self.classifier6 = ClassBlock(neck, self.num_classes, 3048)
+        self.classifier7 = ClassBlock(neck, self.num_classes, 100)
 
         self.transformer = vit_TransReID()
         self.transformer2 = vit_TransReID2()
@@ -288,7 +289,7 @@ class Part(nn.Module):
         f = keypoints_confidence * torch.stack(feature_vector_list, 1)
         vit_feat = self.transformer(f)
 
-        key = torch.zeros((keypoints_location.size()[0], 17, 998))
+        key = torch.zeros((keypoints_location.size()[0], 17, 98))
         k = torch.cat((keypoints_location, key), 2).cuda()
         key_feat = self.transformer2(k)
 
@@ -303,12 +304,14 @@ class Part(nn.Module):
             # score[5] = self.classifier6(feats[5])
             # return score, feats
 
-            score = [torch.zeros(256) for _ in range(2)]
+            score = [torch.zeros(256) for _ in range(3)]
             score[0] = self.classifier5(feature_vector_list[-1])
-            # score[1] = self.classifier6(vit_feat)
-            score[1] = self.classifier6(torch.cat((vit_feat, key_feat), 1))
+            score[1] = self.classifier6(vit_feat)
+            # score[1] = self.classifier6(torch.cat((vit_feat, key_feat), 1))
+            score[2] = self.classifier7(key_feat)
 
-            return score, (feature_vector_list[-1], torch.cat((vit_feat, key_feat), 1))
+            return score, (feature_vector_list[-1], vit_feat, key_feat)
+            # return score, (feature_vector_list[-1], torch.cat((vit_feat, key_feat), 1))
             # return score, (feature_vector_list[-1], vit_feat)
             # return score, feats[4]
         else:
