@@ -117,20 +117,24 @@ class HeatmapProcessor2:
 
         idx = idx.reshape((n, c, 1))
         max_response = max_response.reshape((n, c))
-        max_index = torch.empty((n, c, 2))
-        max_index[:, :, 0] = idx[:, :, 0] % w  # column
-        max_index[:, :, 1] = idx[:, :, 0] // w  # row
+        max_index = torch.empty((n, c, 2)).float()
+        max_index[:, :, 0] = idx[:, :, 0] % w / float(w)  # column
+        max_index[:, :, 1] = idx[:, :, 0] / w / float(h)  # row
 
         if self.group_mode == 'sum':
             heatmap = torch.sum(x[:, self.groups[0]], dim=1, keepdim=True)
             max_response_2 = torch.mean(max_response[:, self.groups[0]], dim=1, keepdim=True)
+            index = torch.mean(max_index[:, self.groups[0]], dim=1, keepdim=True)
 
-            for i in range(0, len(self.groups)):
+            for i in range(1, len(self.groups)):
                 heatmapi = torch.sum(x[:, self.groups[i]], dim=1, keepdim=True)
                 heatmap = torch.cat((heatmap, heatmapi), dim=1)
 
                 max_response_i = torch.mean(max_response[:, self.groups[i]], dim=1, keepdim=True)
                 max_response_2 = torch.cat((max_response_2, max_response_i), dim=1)
+
+                index_i = max_index[:, self.groups[i]]
+                index = torch.cat((index, index_i), dim=1)
 
         elif self.group_mode == 'max':
             heatmap, _ = torch.max(x[:, self.groups[0]], dim=1, keepdim=True)
@@ -146,7 +150,10 @@ class HeatmapProcessor2:
         if self.normalize_heatmap:
             heatmap = self.normalize(heatmap, self.norm_scale)
 
-        return heatmap, max_response_2, max_index
+        index_global = torch.zeros((index.size()[0], 1, 2))
+        index = torch.cat((index, index_global), dim=1)
+
+        return heatmap, max_response_2, index
 
     def normalize(self, in_tensor, norm_scale):
         n, c, h, w = in_tensor.shape
