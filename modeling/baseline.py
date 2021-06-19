@@ -13,6 +13,7 @@ from .backbones.resnet_ibn_a import resnet50_ibn_a
 from .backbones.vit import vit_TransReID, vit_TransReID2
 from .model_keypoints import ScoremapComputer, compute_local_features
 from .gcn import generate_adj, GCN
+from .pointnet import PointNetfeat
 
 
 def weights_init_kaiming(m):
@@ -289,12 +290,20 @@ class Part(nn.Module):
 
         # f = torch.stack(feature_vector_list, 1)
 
-        keypoints_confidence = keypoints_confidence.unsqueeze(2).repeat([1, 1, 2048])
-        f = keypoints_confidence * torch.stack(feature_vector_list, 1)
+        f_confidence = keypoints_confidence.unsqueeze(2).repeat([1, 1, 2048])
+        f = f_confidence * torch.stack(feature_vector_list, 1)
 
-        key = torch.zeros((keypoints_location.size()[0], 14, 126))
-        k = torch.cat((keypoints_location, key), 2).cuda()
+        # key = torch.zeros((keypoints_location.size()[0], 14, 126))
+        # k = torch.cat((keypoints_location, key), 2).cuda()
+        # self.adj = self.adj.to(k.device)
+        # key_feat = self.gcn(k, self.adj)
+
+        pointfeat = PointNetfeat(global_feat=False)
+        k = pointfeat(keypoints_location.transpose(2, 1))
+        k = k.transpose(2, 1).cuda()
         self.adj = self.adj.to(k.device)
+        k_confidence = keypoints_confidence.unsqueeze(2).repeat([1, 1, 128])
+        # key_feat = k_confidence * self.gcn(k, self.adj)
         key_feat = self.gcn(k, self.adj)
 
         f = torch.cat((f, key_feat), dim=2)
@@ -333,8 +342,8 @@ class Part(nn.Module):
             else:
                 # return torch.cat((vit_feat, global_feat), 1)
                 # return torch.cat((feats[4], global_feat), 1)
-                # return torch.cat((feature_vector_list[-1], vit_feat), 1)
-                return torch.cat((feature_vector_list[-1], vit_feat, key_feat), 1)
+                return torch.cat((feature_vector_list[-1], vit_feat), 1)
+                # return torch.cat((feature_vector_list[-1], vit_feat, key_feat), 1)
 
         # if self.training:
         #     global_feat = self.base(x)
