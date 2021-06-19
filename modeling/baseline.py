@@ -251,7 +251,8 @@ class Part(nn.Module):
         self.classifier4 = ClassBlock(neck, self.num_classes, self.in_planes)
         self.classifier5 = ClassBlock(neck, self.num_classes, self.in_planes)
         # self.classifier6 = ClassBlock(neck, self.num_classes, self.in_planes)
-        self.classifier6 = ClassBlock(neck, self.num_classes, 2176)
+        self.classifier6 = ClassBlock(neck, self.num_classes, 2304)
+        # self.classifier6 = ClassBlock(neck, self.num_classes, 2176)
         # self.classifier6 = ClassBlock(neck, self.num_classes, 2898)
         # self.classifier7 = ClassBlock(neck, self.num_classes, 1700)
 
@@ -268,11 +269,13 @@ class Part(nn.Module):
         #     [0, 11], [0, 12], [11, 13], [13, 15], [12, 14], [14, 16]  # libs
         #      ]
         # print(next(self.base.parameters()).device)
-        # self.device = torch.device('cuda')
-        # self.adj = generate_adj(17, self.linked_edges, self_connect=0.0).to(self.device)
-        self.adj = generate_adj(14, self.linked_edges, self_connect=0.0)
+        self.device = torch.device('cuda')
+        self.adj = generate_adj(14, self.linked_edges, self_connect=0.0).to(self.device)
+        # self.adj = generate_adj(17, self.linked_edges, self_connect=0.0)
         # self.gcn = GCN(100, 100, 100).to(self.device)
-        self.gcn = GCN(128, 128, 128)
+        # self.gcn = GCN(50, 50, 50)
+        # self.gcn = GCN(128, 128, 128)
+        self.gcn = GCN(256, 256, 256)
 
         # keypoints model
         # self.scoremap_computer = ScoremapComputer(10).to(self.device)
@@ -288,10 +291,9 @@ class Part(nn.Module):
         feature_vector_list, keypoints_confidence = compute_local_features(
             global_feat, score_maps, keypoints_confidence)
 
-        # f = torch.stack(feature_vector_list, 1)
-
         f_confidence = keypoints_confidence.unsqueeze(2).repeat([1, 1, 2048])
         f = f_confidence * torch.stack(feature_vector_list, 1)
+        # vit_feat = self.transformer(f)
 
         # key = torch.zeros((keypoints_location.size()[0], 14, 126))
         # k = torch.cat((keypoints_location, key), 2).cuda()
@@ -302,14 +304,14 @@ class Part(nn.Module):
         k = pointfeat(keypoints_location.transpose(2, 1))
         k = k.transpose(2, 1).cuda()
         self.adj = self.adj.to(k.device)
-        k_confidence = keypoints_confidence.unsqueeze(2).repeat([1, 1, 128])
-        # key_feat = k_confidence * self.gcn(k, self.adj)
-        key_feat = self.gcn(k, self.adj)
+        k_confidence = keypoints_confidence.unsqueeze(2).repeat([1, 1, 256])
+        key_feat = k_confidence * self.gcn(k, self.adj)
+        # key_feat = self.gcn(k, self.adj)
 
         f = torch.cat((f, key_feat), dim=2)
         vit_feat = self.transformer(f)
 
-        # key = torch.zeros((keypoints_location.size()[0], 17, 126))
+        # key = torch.zeros((keypoints_location.size()[0], 17, 48))
         # k = torch.cat((keypoints_location, key), 2).cuda()
         # self.adj = self.adj.to(k.device)
         # key_feat = self.gcn(k, self.adj)
