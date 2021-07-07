@@ -120,9 +120,9 @@ class PointNetfeat(nn.Module):
 
         # pointfeat = x
         x = F.relu(self.bn2(self.conv2(x)))
-        # pointfeat = x
-        x = self.bn3(self.conv3(x))
         pointfeat = x
+        # x = self.bn3(self.conv3(x))
+        # pointfeat = x
         # x = torch.max(x, 2, keepdim=True)[0]
         # x = x.view(-1, 1024)
         if self.global_feat:

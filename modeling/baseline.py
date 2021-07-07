@@ -251,8 +251,8 @@ class Part(nn.Module):
         self.classifier4 = ClassBlock(neck, self.num_classes, self.in_planes)
         self.classifier5 = ClassBlock(neck, self.num_classes, self.in_planes)
         # self.classifier6 = ClassBlock(neck, self.num_classes, self.in_planes)
-        self.classifier6 = ClassBlock(neck, self.num_classes, 2304)
-        # self.classifier6 = ClassBlock(neck, self.num_classes, 2176)
+        # self.classifier6 = ClassBlock(neck, self.num_classes, 2304)
+        self.classifier6 = ClassBlock(neck, self.num_classes, 2176)
         # self.classifier6 = ClassBlock(neck, self.num_classes, 2898)
         # self.classifier7 = ClassBlock(neck, self.num_classes, 1700)
 
@@ -274,8 +274,8 @@ class Part(nn.Module):
         # self.adj = generate_adj(17, self.linked_edges, self_connect=0.0)
         # self.gcn = GCN(100, 100, 100).to(self.device)
         # self.gcn = GCN(50, 50, 50)
-        # self.gcn = GCN(128, 128, 128)
-        self.gcn = GCN(256, 256, 256)
+        self.gcn = GCN(128, 128, 128)
+        # self.gcn = GCN(256, 256, 256)
 
         # keypoints model
         # self.scoremap_computer = ScoremapComputer(10).to(self.device)
@@ -304,7 +304,7 @@ class Part(nn.Module):
         k = pointfeat(keypoints_location.transpose(2, 1))
         k = k.transpose(2, 1).cuda()
         self.adj = self.adj.to(k.device)
-        k_confidence = keypoints_confidence.unsqueeze(2).repeat([1, 1, 256])
+        k_confidence = keypoints_confidence.unsqueeze(2).repeat([1, 1, 128])
         key_feat = k_confidence * self.gcn(k, self.adj)
         # key_feat = self.gcn(k, self.adj)
 
@@ -328,7 +328,7 @@ class Part(nn.Module):
             # score[5] = self.classifier6(feats[5])
             # return score, feats
 
-            score = [torch.zeros(256) for _ in range(2)]
+            score = [torch.zeros(128) for _ in range(2)]
             score[0] = self.classifier5(feature_vector_list[-1])
             score[1] = self.classifier6(vit_feat)
             # score[1] = self.classifier6(torch.cat((vit_feat, key_feat), 1))
