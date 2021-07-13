@@ -255,6 +255,7 @@ class Part(nn.Module):
         self.classifier6 = ClassBlock(neck, self.num_classes, 2176)
         # self.classifier6 = ClassBlock(neck, self.num_classes, 2898)
         # self.classifier7 = ClassBlock(neck, self.num_classes, 1700)
+        self.classifier7 = ClassBlock(neck, self.num_classes, 1024)
 
         self.transformer = vit_TransReID()
         # self.transformer2 = vit_TransReID2()
@@ -301,12 +302,18 @@ class Part(nn.Module):
         # key_feat = self.gcn(k, self.adj)
 
         pointfeat = PointNetfeat(global_feat=False)
-        k = pointfeat(keypoints_location.transpose(2, 1))
+        k= pointfeat(keypoints_location.transpose(2, 1))
         k = k.transpose(2, 1).cuda()
         self.adj = self.adj.to(k.device)
         k_confidence = keypoints_confidence.unsqueeze(2).repeat([1, 1, 128])
         key_feat = k_confidence * self.gcn(k, self.adj)
         # key_feat = self.gcn(k, self.adj)
+
+        bn3 = nn.BatchNorm1d(1024)
+        conv3 = torch.nn.Conv1d(128, 1024, 1)
+        key_global = bn3(conv3(key_feat.transpose(2, 1).cpu()))
+        key_global = torch.max(key_global, 2, keepdim=True)[0]
+        key_global = key_global.view(-1, 1024).cuda()
 
         f = torch.cat((f, key_feat), dim=2)
         vit_feat = self.transformer(f)
@@ -328,15 +335,17 @@ class Part(nn.Module):
             # score[5] = self.classifier6(feats[5])
             # return score, feats
 
-            score = [torch.zeros(128) for _ in range(2)]
+            score = [torch.zeros(128) for _ in range(3)]
             score[0] = self.classifier5(feature_vector_list[-1])
             score[1] = self.classifier6(vit_feat)
+            score[2] = self.classifier7(key_global)
+            # score[3] = self.classifier4(feature_vector_list[0])
             # score[1] = self.classifier6(torch.cat((vit_feat, key_feat), 1))
             # score[2] = self.classifier7(key_feat)
 
             # return score, (feature_vector_list[-1], vit_feat, key_feat)
             # return score, (feature_vector_list[-1], torch.cat((vit_feat, key_feat), 1))
-            return score, (feature_vector_list[-1], vit_feat)
+            return score, (feature_vector_list[-1], vit_feat, key_global)
             # return score, feats[4]
         else:
             if self.neck_feat == 'after':

@@ -48,7 +48,9 @@ def make_loss(cfg, num_classes):    # modified by gu
                     if cfg.MODEL.IF_UNCENTAINTY == 'on':
                         return [torch.exp(-log_var).cuda() * F.cross_entropy(score, target) + log_var.cuda() + triplet(feat, target, log_var)[0], torch.exp(-log_var).cuda() * F.cross_entropy(score, target) + log_var.cuda()]
                     else:
-                        return [F.cross_entropy(score, target) + triplet(feat, target)[0], F.cross_entropy(score, target)]
+                        # return [F.cross_entropy(score, target) + triplet(feat, target)[0], F.cross_entropy(score, target)]
+                        # baseline
+                        return F.cross_entropy(score, target) + triplet(feat, target)[0]
             else:
                 print('expected METRIC_LOSS_TYPE should be triplet'
                       'but got {}'.format(cfg.MODEL.METRIC_LOSS_TYPE))

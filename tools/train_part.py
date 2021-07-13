@@ -41,7 +41,7 @@ def train(cfg):
     print('Train without center loss, the loss type is', cfg.MODEL.METRIC_LOSS_TYPE)
 
     if cfg.MODEL.IF_UNCENTAINTY == 'on':
-        log_var = torch.zeros(2, requires_grad=True)
+        log_var = torch.zeros(3, requires_grad=True)
         optimizer = make_optimizer(cfg, model, log_var)
     else:
         optimizer = make_optimizer(cfg, model)

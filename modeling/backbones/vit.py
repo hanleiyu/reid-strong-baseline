@@ -232,6 +232,7 @@ class TransReID(nn.Module):
             x = blk(x)
         x = self.norm(x)
         return x[:, 0]
+        # return x
 
     def forward(self, x):
         x = self.forward_features(x)
