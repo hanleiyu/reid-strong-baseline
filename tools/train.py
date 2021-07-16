@@ -23,13 +23,17 @@ from utils.logger import setup_logger
 import random
 import numpy as np
 import datetime
+from torch.backends import cudnn
 
 def setup_seed(seed):
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
     np.random.seed(seed)
     random.seed(seed)
-    torch.backends.cudnn.deterministic = True
+    os.environ["PYTHONHASHSEED"] = str(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    cudnn.benchmark = False
+    cudnn.deterministic = True
 
 
 def train(cfg):
@@ -127,7 +131,7 @@ def train(cfg):
 
 
 def main():
-    setup_seed(20)
+    setup_seed(0)
 
     parser = argparse.ArgumentParser(description="ReID Baseline Training")
     parser.add_argument(
@@ -164,7 +168,7 @@ def main():
 
     if cfg.MODEL.DEVICE == "cuda":
         os.environ['CUDA_VISIBLE_DEVICES'] = cfg.MODEL.DEVICE_ID    # new add by gu
-    cudnn.benchmark = True
+    # cudnn.benchmark = True
     train(cfg)
 
 
