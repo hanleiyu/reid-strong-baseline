@@ -276,6 +276,19 @@ class Part(nn.Module):
         # self.scoremap_computer = nn.DataParallel(self.scoremap_computer).to(self.device)
         self.scoremap_computer = self.scoremap_computer.eval()
 
+        # self.bottleneck1 = nn.BatchNorm1d(self.in_planes)
+        # self.bottleneck1.bias.requires_grad_(False)  # no shift
+        # self.bottleneck1.apply(weights_init_kaiming)
+        #
+        # self.bottleneck2 = nn.BatchNorm1d(2176)
+        # self.bottleneck2.bias.requires_grad_(False)  # no shift
+        # self.bottleneck2.apply(weights_init_kaiming)
+        #
+        # self.bottleneck3 = nn.BatchNorm1d(1024)
+        # self.bottleneck3.bias.requires_grad_(False)  # no shift
+        # self.bottleneck3.apply(weights_init_kaiming)
+
+
     def forward(self, x, mask=None):
         global_feat = self.base(x)
 
@@ -286,6 +299,7 @@ class Part(nn.Module):
 
         f_confidence = keypoints_confidence.unsqueeze(2).repeat([1, 1, 2048])
         f = f_confidence * torch.stack(feature_vector_list, 1)
+        # f = torch.stack(feature_vector_list, 1)
         # vit_feat = self.transformer(f)
 
         # key = torch.zeros((keypoints_location.size()[0], 14, 126))
@@ -316,6 +330,11 @@ class Part(nn.Module):
         # key_feat = self.gcn(k, self.adj)
         # key_feat = key_feat.reshape((key_feat.size()[0], -1))
 
+        # if self.neck == 'bnneck':
+        #     fb = self.bottleneck1(feature_vector_list[-1])
+        #     vb = self.bottleneck2(vit_feat)
+        #     kb = self.bottleneck3(key_global)
+
         if self.training:
             # score = self.classifier1(feats[4])
             # score = [torch.zeros(256) for _ in range(num + 2)]
@@ -331,6 +350,9 @@ class Part(nn.Module):
             score[0] = self.classifier5(feature_vector_list[-1])
             score[1] = self.classifier6(vit_feat)
             score[2] = self.classifier7(key_global)
+            # score[0] = self.classifier5(fb)
+            # score[1] = self.classifier6(vb)
+            # score[2] = self.classifier7(kb)
             # score[3] = self.classifier4(feature_vector_list[0])
             # score[1] = self.classifier6(torch.cat((vit_feat, key_feat), 1))
             # score[2] = self.classifier7(key_feat)
@@ -342,69 +364,13 @@ class Part(nn.Module):
         else:
             if self.neck_feat == 'after':
                 return feature_vector_list[-1]
+                # return torch.cat((fb, vb), 1)
             else:
                 # return torch.cat((vit_feat, global_feat), 1)
                 # return torch.cat((feats[4], global_feat), 1)
                 return torch.cat((feature_vector_list[-1], vit_feat), 1)
                 # return torch.cat((feature_vector_list[-1], vit_feat, key_feat), 1)
 
-        # if self.training:
-        #     global_feat = self.base(x)
-        #     num = len(list(mask[0, :, 0, 0, 0]))
-        #     feats = [torch.zeros(128, 2048) for _ in range(num + 1)]
-        #     # score = [torch.zeros(256) for _ in range(num + 1)]
-        #
-        #     for i in range(num):
-        #         feats[i] = torch.mul(global_feat, mask[:, i, :, :, :].cuda())
-        #
-        #     # global_feat = self.gap(global_feat)  # (b, 2048, 1, 1)
-        #     # global_feat = global_feat.view(global_feat.shape[0], -1)  # flatten to (bs, 2048)
-        #     # # feat = self.bottleneck5(global_feat)
-        #     # feat = self.bottleneck(global_feat)
-        #     # feats[num] = feat
-        #     # for i in range(num):
-        #     #     score[i] = self.classifier(feats[i])
-        #     # score[num] = self.classifier(feat)
-        #
-        #     feats[0] = self.feature1(feats[0])
-        #     feats[1] = self.feature2(feats[1])
-        #     feats[2] = self.feature3(feats[2])
-        #     feats[3] = self.feature4(feats[3])
-        #     feats[4] = self.feature5(global_feat)
-        #
-        #     f = torch.stack((feats[0], feats[1], feats[2], feats[3], feats[4]), 1)
-        #     feat = self.transformer(f)
-        #     score = self.classifier1(feat)
-        #
-        #
-        #     # score[0] = self.classifier1(feats[0])
-        #     # score[1] = self.classifier2(feats[1])
-        #     # score[2] = self.classifier3(feats[2])
-        #     # score[3] = self.classifier4(feats[3])
-        #     # score[4] = self.classifier5(feats[4])
-        #     # return score, feats  # global feature for triplet loss
-        #     return score, feat
-        #
-        # else:
-        #     global_feat = self.base(x)
-        #
-        #     # global_feat = self.feature.gap(global_feat)
-        #     global_feat = self.feature5.gap(global_feat)  # (b, 2048, 1, 1)
-        #     global_feat = global_feat.view(global_feat.shape[0], -1)  # flatten to (bs, 2048)
-        #
-        #     if self.neck == 'no':
-        #         feat = global_feat
-        #     elif self.neck == 'bnneck':
-        #         feat = self.feature5.bottleneck(global_feat)
-        #         # feat = self.bottleneck5(global_feat)
-        #         # feat = self.bottleneck(global_feat)
-        #
-        #     if self.neck_feat == 'after':
-        #         # print("Test with feature after BN")
-        #         return feat
-        #     else:
-        #         # print("Test with feature before BN")
-        #         return global_feat
 
     def load_param(self, trained_path):
         param_dict = torch.load(trained_path).state_dict()
