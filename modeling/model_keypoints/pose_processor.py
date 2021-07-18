@@ -108,6 +108,13 @@ class HeatmapProcessor2:
         assert group_mode in ['sum', 'max'], "only support sum or max"
 
     def __call__(self, x):
+        # x_re = x.reshape((64, 17, -1))
+        # index = (x_re > 0.01).nonzero()
+        # index = index.reshape((64, 17, -1))
+        # part_index[:, :, :, 0] = idx[:, :, 0] % w / float(w)  # column
+        # max_index[:, :, 1] = idx[:, :, 0] / w / float(h)  # row
+
+
         x = F.interpolate(x, [16, 8], mode='bilinear', align_corners=False)
         n, c, h, w = x.shape
 

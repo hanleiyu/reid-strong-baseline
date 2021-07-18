@@ -236,6 +236,9 @@ class Part(nn.Module):
         self.feature4 = FeatureBlock(self.in_planes)
         self.feature5 = FeatureBlock(self.in_planes)
         self.feature6 = FeatureBlock(self.in_planes)
+        # self.feature6 = FeatureBlock(2176)
+        # self.feature7 = FeatureBlock(1024)
+
 
         self.classifier1 = ClassBlock(neck, self.num_classes, self.in_planes)
         self.classifier2 = ClassBlock(neck, self.num_classes, self.in_planes)
@@ -243,50 +246,55 @@ class Part(nn.Module):
         self.classifier4 = ClassBlock(neck, self.num_classes, self.in_planes)
         self.classifier5 = ClassBlock(neck, self.num_classes, self.in_planes)
         # self.classifier6 = ClassBlock(neck, self.num_classes, self.in_planes)
-        # self.classifier6 = ClassBlock(neck, self.num_classes, 2304)
         self.classifier6 = ClassBlock(neck, self.num_classes, 2176)
-        # self.classifier6 = ClassBlock(neck, self.num_classes, 2898)
-        # self.classifier7 = ClassBlock(neck, self.num_classes, 1700)
+        # self.classifier6 = ClassBlock(neck, self.num_classes, 2304)
         self.classifier7 = ClassBlock(neck, self.num_classes, 1024)
 
         self.transformer = vit_TransReID()
-        # self.transformer2 = vit_TransReID2()
 
+        # self.linked_edges = \
+        #     [[0, 1], [0, 2], [1, 3], [3, 5], [2, 4], [4, 6],  # body
+        #      [0, 7], [0, 8], [7, 9], [9, 11], [8, 10], [10, 12]  # libs
+        #      ]
         self.linked_edges = \
             [[0, 1], [0, 2], [1, 3], [3, 5], [2, 4], [4, 6],  # body
-             [0, 7], [0, 8], [7, 9], [9, 11], [8, 10], [10, 12]  # libs
+             [0, 7], [0, 8], [1, 7], [1, 8], [7, 9], [9, 11], [8, 10], [10, 12]  # libs
              ]
-        # self.linked_edges = \
-        #     [[0, 1], [0, 2], [1, 3], [2, 4],  # head
-        #      [0, 5], [0, 6], [5, 7], [7, 9], [6, 8], [8, 10],  # body
-        #     [0, 11], [0, 12], [11, 13], [13, 15], [12, 14], [14, 16]  # libs
+        self.linked_edges2 = \
+            [[1, 5], [2, 6], [7, 11], [8, 12]
+             ]
+        # self.linked_edges3 = \
+        #     [[0, 5], [0, 6], [0, 11], [0, 12],
+        #      [1, 11], [2, 12], [5, 11], [5, 12]
         #      ]
-        # print(next(self.base.parameters()).device)
+
         self.device = torch.device('cuda')
-        self.adj = generate_adj(14, self.linked_edges, self_connect=0.0).to(self.device)
-        # self.adj = generate_adj(17, self.linked_edges, self_connect=0.0)
-        # self.gcn = GCN(100, 100, 100).to(self.device)
+        # self.adj = generate_adj(14, self.linked_edges, self_connect=0.0).to(self.device)
+        self.adj = generate_adj(14, self.linked_edges, self.linked_edges2, self_connect=0.0).to(self.device)
+        # self.adj = generate_adj(14, self.linked_edges, self.linked_edges2, self.linked_edges3, self_connect=0.0).to(self.device)
+        # self.gcn = GCN(100, 100, 100)
         # self.gcn = GCN(50, 50, 50)
         self.gcn = GCN(128, 128, 128)
         # self.gcn = GCN(256, 256, 256)
 
         # keypoints model
-        # self.scoremap_computer = ScoremapComputer(10).to(self.device)
         self.scoremap_computer = ScoremapComputer(10)
         # self.scoremap_computer = nn.DataParallel(self.scoremap_computer).to(self.device)
         self.scoremap_computer = self.scoremap_computer.eval()
 
-        # self.bottleneck1 = nn.BatchNorm1d(self.in_planes)
-        # self.bottleneck1.bias.requires_grad_(False)  # no shift
-        # self.bottleneck1.apply(weights_init_kaiming)
-        #
-        # self.bottleneck2 = nn.BatchNorm1d(2176)
-        # self.bottleneck2.bias.requires_grad_(False)  # no shift
-        # self.bottleneck2.apply(weights_init_kaiming)
-        #
-        # self.bottleneck3 = nn.BatchNorm1d(1024)
-        # self.bottleneck3.bias.requires_grad_(False)  # no shift
-        # self.bottleneck3.apply(weights_init_kaiming)
+        self.bottleneck1 = nn.BatchNorm1d(self.in_planes)
+        self.bottleneck1.bias.requires_grad_(False)  # no shift
+        self.bottleneck1.apply(weights_init_kaiming)
+
+        # self.bottleneck2 = nn.BatchNorm1d(2048)
+        self.bottleneck2 = nn.BatchNorm1d(2176)
+        # self.bottleneck2 = nn.BatchNorm1d(2304)
+        self.bottleneck2.bias.requires_grad_(False)  # no shift
+        self.bottleneck2.apply(weights_init_kaiming)
+
+        self.bottleneck3 = nn.BatchNorm1d(1024)
+        self.bottleneck3.bias.requires_grad_(False)  # no shift
+        self.bottleneck3.apply(weights_init_kaiming)
 
 
     def forward(self, x, mask=None):
@@ -297,26 +305,23 @@ class Part(nn.Module):
         feature_vector_list, keypoints_confidence = compute_local_features(
             global_feat, score_maps, keypoints_confidence)
 
-        f_confidence = keypoints_confidence.unsqueeze(2).repeat([1, 1, 2048])
-        f = f_confidence * torch.stack(feature_vector_list, 1)
-        # f = torch.stack(feature_vector_list, 1)
+        # f_confidence = keypoints_confidence.unsqueeze(2).repeat([1, 1, 2048])
+        # f = f_confidence * torch.stack(feature_vector_list, 1)
+        f = torch.stack(feature_vector_list, 1)
         # vit_feat = self.transformer(f)
 
-        # key = torch.zeros((keypoints_location.size()[0], 14, 126))
-        # k = torch.cat((keypoints_location, key), 2).cuda()
-        # self.adj = self.adj.to(k.device)
-        # key_feat = self.gcn(k, self.adj)
-
         pointfeat = PointNetfeat(global_feat=False)
-        k= pointfeat(keypoints_location.transpose(2, 1))
+        k= pointfeat(torch.cat((keypoints_location, keypoints_confidence.unsqueeze(2).cpu()), dim=2).transpose(2, 1))
         k = k.transpose(2, 1).cuda()
         self.adj = self.adj.to(k.device)
-        k_confidence = keypoints_confidence.unsqueeze(2).repeat([1, 1, 128])
-        key_feat = k_confidence * self.gcn(k, self.adj)
-        # key_feat = self.gcn(k, self.adj)
+        # k_confidence = keypoints_confidence.unsqueeze(2).repeat([1, 1, 128])
+        # key_feat = k_confidence * self.gcn(k, self.adj)
+        key_feat = self.gcn(k, self.adj)
 
         bn3 = nn.BatchNorm1d(1024)
         conv3 = torch.nn.Conv1d(128, 1024, 1)
+        # conv3 = torch.nn.Conv1d(128, 2048, 1)
+        # conv3 = torch.nn.Conv1d(256, 1024, 1)
         key_global = bn3(conv3(key_feat.transpose(2, 1).cpu()))
         key_global = torch.max(key_global, 2, keepdim=True)[0]
         key_global = key_global.view(-1, 1024).cuda()
@@ -324,16 +329,10 @@ class Part(nn.Module):
         f = torch.cat((f, key_feat), dim=2)
         vit_feat = self.transformer(f)
 
-        # key = torch.zeros((keypoints_location.size()[0], 17, 48))
-        # k = torch.cat((keypoints_location, key), 2).cuda()
-        # self.adj = self.adj.to(k.device)
-        # key_feat = self.gcn(k, self.adj)
-        # key_feat = key_feat.reshape((key_feat.size()[0], -1))
-
-        # if self.neck == 'bnneck':
-        #     fb = self.bottleneck1(feature_vector_list[-1])
-        #     vb = self.bottleneck2(vit_feat)
-        #     kb = self.bottleneck3(key_global)
+        if self.neck == 'bnneck':
+            fb = self.bottleneck1(feature_vector_list[-1])
+            vb = self.bottleneck2(vit_feat)
+            kb = self.bottleneck3(key_global)
 
         if self.training:
             # score = self.classifier1(feats[4])
@@ -347,28 +346,25 @@ class Part(nn.Module):
             # return score, feats
 
             score = [torch.zeros(128) for _ in range(3)]
-            score[0] = self.classifier5(feature_vector_list[-1])
-            score[1] = self.classifier6(vit_feat)
-            score[2] = self.classifier7(key_global)
-            # score[0] = self.classifier5(fb)
-            # score[1] = self.classifier6(vb)
-            # score[2] = self.classifier7(kb)
-            # score[3] = self.classifier4(feature_vector_list[0])
-            # score[1] = self.classifier6(torch.cat((vit_feat, key_feat), 1))
-            # score[2] = self.classifier7(key_feat)
+            # score[0] = self.classifier5(feature_vector_list[-1])
+            # score[1] = self.classifier6(vit_feat)
+            # score[2] = self.classifier7(key_global)
+            score[0] = self.classifier5(fb)
+            score[1] = self.classifier6(vb)
+            score[2] = self.classifier7(kb)
 
-            # return score, (feature_vector_list[-1], vit_feat, key_feat)
-            # return score, (feature_vector_list[-1], torch.cat((vit_feat, key_feat), 1))
+            # return score, (feature_vector_list[-1], vit_feat)
             return score, (feature_vector_list[-1], vit_feat, key_global)
-            # return score, feats[4]
         else:
             if self.neck_feat == 'after':
-                return feature_vector_list[-1]
-                # return torch.cat((fb, vb), 1)
+                # return feature_vector_list[-1]
+                # return fb
+                return torch.cat((fb, vb), 1)
             else:
                 # return torch.cat((vit_feat, global_feat), 1)
                 # return torch.cat((feats[4], global_feat), 1)
-                return torch.cat((feature_vector_list[-1], vit_feat), 1)
+                return feature_vector_list[-1]
+                # return torch.cat((feature_vector_list[-1], vit_feat), 1)
                 # return torch.cat((feature_vector_list[-1], vit_feat, key_feat), 1)
 
 

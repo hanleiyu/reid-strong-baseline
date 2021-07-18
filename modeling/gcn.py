@@ -8,7 +8,7 @@ from torch.nn.parameter import Parameter
 from torch.nn.modules.module import Module
 
 
-def generate_adj(node_num, linked_edges, self_connect=1):
+def generate_adj(node_num, linked_edges, linked_edges2=0, linked_edges3=0, self_connect=1):
     '''
     Params:
         node_num: node number
@@ -23,7 +23,15 @@ def generate_adj(node_num, linked_edges, self_connect=1):
 
     for i, j in linked_edges:
         adj[i, j] = 1.0
-        adj[j, i] = 1.0
+        adj[j, i] = 1.0 
+
+    for i, j in linked_edges2:
+        adj[i, j] = 0.6
+        adj[j, i] = 0.6
+
+    # for i, j in linked_edges3:
+    #     adj[i, j] = 0.3
+    #     adj[j, i] = 0.3
 
     adj[-1, :-1] = 0
     adj[-1, -1] = 1

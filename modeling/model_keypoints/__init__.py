@@ -47,8 +47,12 @@ def compute_local_features(feature_maps, score_maps, keypoints_confidence):
             feature_vector_i = torch.sum(score_map_i * feature_maps, [2, 3])
             feature_vector_list.append(feature_vector_i)
         else:  # global feature vectors
+            # x = feature_maps.view(fbs, fc, -1)
+            # p = 3.0
+            # x_pool = (torch.mean(x ** p, dim=-1) + 1e-12) ** (1 / p)
             feature_vector_i = (
                         F.adaptive_avg_pool2d(feature_maps, 1) + F.adaptive_max_pool2d(feature_maps, 1)).squeeze()
+            # feature_vector_i = x_pool.squeeze()
             feature_vector_list.append(feature_vector_i)
             keypoints_confidence = torch.cat([keypoints_confidence, torch.ones([fbs, 1]).cuda()], dim=1)
 
