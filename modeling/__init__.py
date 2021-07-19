@@ -5,13 +5,13 @@
 """
 
 from .baseline import Baseline, Part
+from .model import embed_net
 
 
 def build_model(cfg, num_classes):
-    # if cfg.MODEL.NAME == 'resnet50':
-    #     model = Baseline(num_classes, cfg.MODEL.LAST_STRIDE, cfg.MODEL.PRETRAIN_PATH, cfg.MODEL.NECK, cfg.TEST.NECK_FEAT)
-    model = Baseline(num_classes, cfg.MODEL.LAST_STRIDE, cfg.MODEL.PRETRAIN_PATH, cfg.MODEL.NECK,
-                     cfg.TEST.NECK_FEAT, cfg.MODEL.NAME, cfg.MODEL.PRETRAIN_CHOICE)
+    # model = Baseline(num_classes, cfg.MODEL.LAST_STRIDE, cfg.MODEL.PRETRAIN_PATH, cfg.MODEL.NECK,
+    #                  cfg.TEST.NECK_FEAT, cfg.MODEL.NAME, cfg.MODEL.PRETRAIN_CHOICE)
+    model = embed_net(num_classes, cfg.MODEL.PRETRAIN_PATH)
     return model
 
 

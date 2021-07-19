@@ -10,7 +10,7 @@ from torch import nn
 from .backbones.resnet import ResNet, BasicBlock, Bottleneck
 from .backbones.senet import SENet, SEResNetBottleneck, SEBottleneck, SEResNeXtBottleneck
 from .backbones.resnet_ibn_a import resnet50_ibn_a
-from .backbones.vit import vit_TransReID, vit_TransReID2
+from .backbones.vit import vit_TransReID
 from .model_keypoints import ScoremapComputer, compute_local_features
 from .gcn import generate_adj, GCN
 from .pointnet import PointNetfeat
@@ -311,7 +311,8 @@ class Part(nn.Module):
         # vit_feat = self.transformer(f)
 
         pointfeat = PointNetfeat(global_feat=False)
-        k= pointfeat(torch.cat((keypoints_location, keypoints_confidence.unsqueeze(2).cpu()), dim=2).transpose(2, 1))
+        k = pointfeat(keypoints_location.transpose(2, 1))
+        # k = pointfeat(torch.cat((keypoints_location, keypoints_confidence.unsqueeze(2).cpu()), dim=2).transpose(2, 1))
         k = k.transpose(2, 1).cuda()
         self.adj = self.adj.to(k.device)
         # k_confidence = keypoints_confidence.unsqueeze(2).repeat([1, 1, 128])
@@ -358,8 +359,8 @@ class Part(nn.Module):
         else:
             if self.neck_feat == 'after':
                 # return feature_vector_list[-1]
-                # return fb
-                return torch.cat((fb, vb), 1)
+                return fb
+                # return torch.cat((fb, vb), 1)
             else:
                 # return torch.cat((vit_feat, global_feat), 1)
                 # return torch.cat((feats[4], global_feat), 1)
