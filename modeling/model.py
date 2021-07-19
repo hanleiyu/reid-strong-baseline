@@ -91,13 +91,14 @@ def weights_init_classifier(m):
 
 
 class module(nn.Module):
-    def __init__(self, model_path):
+    def __init__(self, model_path, pretrain_choice):
         super(module, self).__init__()
 
         self.base = ResNet(last_stride=1,
                            block=Bottleneck,
                            layers=[3, 4, 6, 3])
-        self.base.load_param(model_path)
+        if pretrain_choice == 'imagenet':
+            self.base.load_param(model_path)
 
     def forward(self, x):
         x = self.base.conv1(x)
@@ -109,7 +110,7 @@ class module(nn.Module):
 
 
 class base_resnet(nn.Module):
-    def __init__(self, model_path):
+    def __init__(self, model_path, pretrain_choice):
         super(base_resnet, self).__init__()
 
         model_base = ResNet(last_stride=1,
@@ -118,7 +119,8 @@ class base_resnet(nn.Module):
         # avg pooling to global pooling
         model_base.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.base = model_base
-        self.base.load_param(model_path)
+        if pretrain_choice == 'imagenet':
+            self.base.load_param(model_path)
 
     def forward(self, x):
         x = self.base.layer1(x)
@@ -129,11 +131,11 @@ class base_resnet(nn.Module):
 
 
 class embed_net(nn.Module):
-    def __init__(self,  class_num, model_path, no_local='off', gm_pool='no'):
+    def __init__(self,  class_num, model_path, pretrain_choice, no_local='off', gm_pool='no'):
         super(embed_net, self).__init__()
 
-        self.base = module(model_path)
-        self.base_resnet = base_resnet(model_path)
+        self.base = module(model_path, pretrain_choice)
+        self.base_resnet = base_resnet(model_path, pretrain_choice)
 
         self.non_local = no_local
         if self.non_local =='on':
@@ -219,6 +221,13 @@ class embed_net(nn.Module):
         feat = self.bottleneck(x_pool)
 
         if self.training:
-            return x_pool, self.classifier(feat)
+            return self.classifier(feat), x_pool
         else:
-            return self.l2norm(x_pool), self.l2norm(feat)
+            return self.l2norm(x_pool)
+
+    def load_param(self, trained_path):
+        param_dict = torch.load(trained_path).state_dict()
+        for i in param_dict:
+            if 'classifier' in i:
+                continue
+            self.state_dict()[i].copy_(param_dict[i])
