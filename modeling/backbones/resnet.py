@@ -8,6 +8,7 @@ import math
 
 import torch
 from torch import nn
+import functools
 
 
 def conv3x3(in_planes, out_planes, stride=1):
@@ -88,9 +89,16 @@ class Bottleneck(nn.Module):
 
 
 class ResNet(nn.Module):
-    def __init__(self, last_stride=2, block=Bottleneck, layers=[3, 4, 6, 3]):
+    def __init__(self, last_stride=2, block=Bottleneck, layers=[3, 4, 6, 3], norm_type='bin'):
         self.inplanes = 64
         super().__init__()
+
+        if norm_type == 'bn':
+            from torch.nn import BatchNorm2d as Normlayer
+        elif norm_type == 'bin':
+            from .batchinstancenorm import BatchInstanceNorm2d as Normlayer
+        self.normlayer = functools.partial(Normlayer, affine=True)
+
         self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3,
                                bias=False)
         self.bn1 = nn.BatchNorm2d(64)

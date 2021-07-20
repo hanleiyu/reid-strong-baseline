@@ -131,9 +131,9 @@ class base_resnet(nn.Module):
 
 
 class embed_net(nn.Module):
-    def __init__(self,  class_num, model_path, pretrain_choice, no_local='off', gm_pool='no'):
+    def __init__(self,  class_num, model_path, pretrain_choice, neck_feat, no_local='on', gm_pool='no'):
         super(embed_net, self).__init__()
-
+        self.neck_feat = neck_feat
         self.base = module(model_path, pretrain_choice)
         self.base_resnet = base_resnet(model_path, pretrain_choice)
 
@@ -223,7 +223,11 @@ class embed_net(nn.Module):
         if self.training:
             return self.classifier(feat), x_pool
         else:
-            return self.l2norm(x_pool)
+            if self.neck_feat == 'after':
+                # print("Test with feature after BN")
+                return self.l2norm(feat)
+            else:
+                return self.l2norm(x_pool)
 
     def load_param(self, trained_path):
         param_dict = torch.load(trained_path).state_dict()

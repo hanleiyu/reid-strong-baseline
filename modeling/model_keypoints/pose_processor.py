@@ -125,8 +125,10 @@ class HeatmapProcessor2:
         idx = idx.reshape((n, c, 1))
         max_response = max_response.reshape((n, c))
         max_index = torch.empty((n, c, 2)).float()
-        max_index[:, :, 0] = idx[:, :, 0] % w / float(w)  # column
-        max_index[:, :, 1] = idx[:, :, 0] / w / float(h)  # row
+        # max_index[:, :, 0] = idx[:, :, 0] % w / float(w)  # column
+        # max_index[:, :, 1] = idx[:, :, 0] / w / float(h)  # row
+        max_index[:, :, 0] = 2 * (idx[:, :, 0] % w / float(w)) - 1  # column
+        max_index[:, :, 1] = 4 * (idx[:, :, 0] / w / float(h)) - 2  # row
 
         if self.group_mode == 'sum':
             heatmap = torch.sum(x[:, self.groups[0]], dim=1, keepdim=True)

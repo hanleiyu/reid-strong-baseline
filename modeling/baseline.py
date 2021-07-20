@@ -16,6 +16,18 @@ from .gcn import generate_adj, GCN
 from .pointnet import PointNetfeat
 
 
+class Normalize(nn.Module):
+    def __init__(self, power=2):
+        super(Normalize, self).__init__()
+        self.power = power
+
+    def forward(self, x):
+        norm = x.pow(self.power).sum(1, keepdim=True).pow(1. / self.power)
+        out = x.div(norm)
+        return out
+
+
+
 def weights_init_kaiming(m):
     classname = m.__class__.__name__
     if classname.find('Linear') != -1:
@@ -182,6 +194,8 @@ class Baseline(nn.Module):
             self.bottleneck.apply(weights_init_kaiming)
             self.classifier.apply(weights_init_classifier)
 
+        self.l2norm = Normalize(2)
+
     def forward(self, x):
         global_feat = self.gap(self.base(x))  # (b, 2048, 1, 1)
 
@@ -198,10 +212,10 @@ class Baseline(nn.Module):
         else:
             if self.neck_feat == 'after':
                 # print("Test with feature after BN")
-                return feat
+                return self.l2norm(feat)
             else:
                 # print("Test with feature before BN")
-                return global_feat
+                return self.l2norm(global_feat)
 
     def load_param(self, trained_path):
         param_dict = torch.load(trained_path).state_dict()
@@ -296,6 +310,8 @@ class Part(nn.Module):
         self.bottleneck3.bias.requires_grad_(False)  # no shift
         self.bottleneck3.apply(weights_init_kaiming)
 
+        self.l2norm = Normalize(2)
+
 
     def forward(self, x, mask=None):
         global_feat = self.base(x)
@@ -314,6 +330,7 @@ class Part(nn.Module):
         k = pointfeat(keypoints_location.transpose(2, 1))
         # k = pointfeat(torch.cat((keypoints_location, keypoints_confidence.unsqueeze(2).cpu()), dim=2).transpose(2, 1))
         k = k.transpose(2, 1).cuda()
+        # k = keypoints_location.cuda()
         self.adj = self.adj.to(k.device)
         # k_confidence = keypoints_confidence.unsqueeze(2).repeat([1, 1, 128])
         # key_feat = k_confidence * self.gcn(k, self.adj)
@@ -359,13 +376,13 @@ class Part(nn.Module):
         else:
             if self.neck_feat == 'after':
                 # return feature_vector_list[-1]
-                return fb
-                # return torch.cat((fb, vb), 1)
+                return self.l2norm(fb)
+                # return self.l2norm(torch.cat((fb, vb), 1))
             else:
                 # return torch.cat((vit_feat, global_feat), 1)
                 # return torch.cat((feats[4], global_feat), 1)
-                return feature_vector_list[-1]
-                # return torch.cat((feature_vector_list[-1], vit_feat), 1)
+                return self.l2norm(feature_vector_list[-1])
+                # return self.l2norm(torch.cat((feature_vector_list[-1], vit_feat), 1))
                 # return torch.cat((feature_vector_list[-1], vit_feat, key_feat), 1)
 
 

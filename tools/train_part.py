@@ -14,10 +14,10 @@ from torch.backends import cudnn
 sys.path.append('.')
 from config import cfg
 from data import make_data_loader_part
-from engine.trainer import do_train_part
+from engine.trainer import do_train_part, do_train_with_center_part
 from modeling import build_part_model
-from layers import make_loss
-from solver import make_optimizer, WarmupMultiStepLR
+from layers import make_loss, make_loss_with_center
+from solver import make_optimizer, make_optimizer_with_center, WarmupMultiStepLR
 
 from utils.logger import setup_logger
 import random
@@ -42,62 +42,117 @@ def train(cfg):
     # prepare model
     model = build_part_model(cfg, num_classes)
 
-    print('Train without center loss, the loss type is', cfg.MODEL.METRIC_LOSS_TYPE)
+    if cfg.MODEL.IF_WITH_CENTER == 'no':
+        print('Train without center loss, the loss type is', cfg.MODEL.METRIC_LOSS_TYPE)
+        if cfg.MODEL.IF_UNCENTAINTY == 'on':
+            log_var = torch.zeros(3, requires_grad=True)
+            optimizer = make_optimizer(cfg, model, log_var)
+        else:
+            optimizer = make_optimizer(cfg, model)
+        # scheduler = WarmupMultiStepLR(optimizer, cfg.SOLVER.STEPS, cfg.SOLVER.GAMMA, cfg.SOLVER.WARMUP_FACTOR,
+        #                               cfg.SOLVER.WARMUP_ITERS, cfg.SOLVER.WARMUP_METHOD)
 
-    if cfg.MODEL.IF_UNCENTAINTY == 'on':
+        loss_func = make_loss(cfg, num_classes)     # modified by gu
+
+        # Add for using self trained model
+        if cfg.MODEL.PRETRAIN_CHOICE == 'self':
+            start_epoch = eval(cfg.MODEL.PRETRAIN_PATH.split('/')[-1].split('.')[0].split('_')[-1])
+            print('Start epoch:', start_epoch)
+            path_to_optimizer = cfg.MODEL.PRETRAIN_PATH.replace('model', 'optimizer')
+            print('Path to the checkpoint of optimizer:', path_to_optimizer)
+            model.load_state_dict(torch.load(cfg.MODEL.PRETRAIN_PATH))
+            optimizer.load_state_dict(torch.load(path_to_optimizer))
+            scheduler = WarmupMultiStepLR(optimizer, cfg.SOLVER.STEPS, cfg.SOLVER.GAMMA, cfg.SOLVER.WARMUP_FACTOR,
+                                          cfg.SOLVER.WARMUP_ITERS, cfg.SOLVER.WARMUP_METHOD, start_epoch)
+        elif cfg.MODEL.PRETRAIN_CHOICE == 'imagenet':
+            start_epoch = 0
+            scheduler = WarmupMultiStepLR(optimizer, cfg.SOLVER.STEPS, cfg.SOLVER.GAMMA, cfg.SOLVER.WARMUP_FACTOR,
+                                          cfg.SOLVER.WARMUP_ITERS, cfg.SOLVER.WARMUP_METHOD)
+        else:
+            print('Only support pretrain_choice for imagenet and self, but got {}'.format(cfg.MODEL.PRETRAIN_CHOICE))
+
+        arguments = {}
+        if cfg.MODEL.IF_UNCENTAINTY == 'on':
+            do_train_part(
+                cfg,
+                model,
+                train_loader,
+                val_loader,
+                optimizer,
+                scheduler,      # modify for using self trained model
+                loss_func,
+                num_query,
+                start_epoch,     # add for using self trained model
+                log_var
+            )
+        else:
+            do_train_part(
+                cfg,
+                model,
+                train_loader,
+                val_loader,
+                optimizer,
+                scheduler,      # modify for using self trained model
+                loss_func,
+                num_query,
+                start_epoch    # add for using self trained model
+            )
+    elif cfg.MODEL.IF_WITH_CENTER == 'yes':
+        print('Train with center loss, the loss type is', cfg.MODEL.METRIC_LOSS_TYPE)
         log_var = torch.zeros(3, requires_grad=True)
-        optimizer = make_optimizer(cfg, model, log_var)
-    else:
-        optimizer = make_optimizer(cfg, model)
-    # scheduler = WarmupMultiStepLR(optimizer, cfg.SOLVER.STEPS, cfg.SOLVER.GAMMA, cfg.SOLVER.WARMUP_FACTOR,
-    #                               cfg.SOLVER.WARMUP_ITERS, cfg.SOLVER.WARMUP_METHOD)
 
-    loss_func = make_loss(cfg, num_classes)     # modified by gu
+        loss_func, center_criterion1, center_criterion2, center_criterion3 = make_loss_with_center(cfg, num_classes)
+        optimizer, optimizer_center1, optimizer_center2, optimizer_center3= make_optimizer_with_center(cfg, model, center_criterion1, center_criterion2, center_criterion3, log_var)
 
-    # Add for using self trained model
-    if cfg.MODEL.PRETRAIN_CHOICE == 'self':
-        start_epoch = eval(cfg.MODEL.PRETRAIN_PATH.split('/')[-1].split('.')[0].split('_')[-1])
-        print('Start epoch:', start_epoch)
-        path_to_optimizer = cfg.MODEL.PRETRAIN_PATH.replace('model', 'optimizer')
-        print('Path to the checkpoint of optimizer:', path_to_optimizer)
-        model.load_state_dict(torch.load(cfg.MODEL.PRETRAIN_PATH))
-        optimizer.load_state_dict(torch.load(path_to_optimizer))
-        scheduler = WarmupMultiStepLR(optimizer, cfg.SOLVER.STEPS, cfg.SOLVER.GAMMA, cfg.SOLVER.WARMUP_FACTOR,
-                                      cfg.SOLVER.WARMUP_ITERS, cfg.SOLVER.WARMUP_METHOD, start_epoch)
-    elif cfg.MODEL.PRETRAIN_CHOICE == 'imagenet':
-        start_epoch = 0
-        scheduler = WarmupMultiStepLR(optimizer, cfg.SOLVER.STEPS, cfg.SOLVER.GAMMA, cfg.SOLVER.WARMUP_FACTOR,
-                                      cfg.SOLVER.WARMUP_ITERS, cfg.SOLVER.WARMUP_METHOD)
-    else:
-        print('Only support pretrain_choice for imagenet and self, but got {}'.format(cfg.MODEL.PRETRAIN_CHOICE))
+        # Add for using self trained model
+        if cfg.MODEL.PRETRAIN_CHOICE == 'self':
+            start_epoch = eval(cfg.MODEL.PRETRAIN_PATH.split('/')[-1].split('.')[0].split('_')[-1])
+            print('Start epoch:', start_epoch)
+            path_to_optimizer = cfg.MODEL.PRETRAIN_PATH.replace('model', 'optimizer')
+            print('Path to the checkpoint of optimizer:', path_to_optimizer)
+            path_to_center_param1 = cfg.MODEL.PRETRAIN_PATH.replace('model', 'center_param1')
+            path_to_center_param2 = cfg.MODEL.PRETRAIN_PATH.replace('model', 'center_param2')
+            path_to_center_param3 = cfg.MODEL.PRETRAIN_PATH.replace('model', 'center_param3')
+            print('Path to the checkpoint of center_param:', path_to_center_param1)
+            path_to_optimizer_center1 = cfg.MODEL.PRETRAIN_PATH.replace('model', 'optimizer_center1')
+            path_to_optimizer_center2 = cfg.MODEL.PRETRAIN_PATH.replace('model', 'optimizer_center2')
+            path_to_optimizer_center3 = cfg.MODEL.PRETRAIN_PATH.replace('model', 'optimizer_center3')
+            print('Path to the checkpoint of optimizer_center:', path_to_optimizer_center)
+            model.load_state_dict(torch.load(cfg.MODEL.PRETRAIN_PATH))
+            optimizer.load_state_dict(torch.load(path_to_optimizer))
+            center_criterion1.load_state_dict(torch.load(path_to_center_param1))
+            center_criterion2.load_state_dict(torch.load(path_to_center_param2))
+            center_criterion3.load_state_dict(torch.load(path_to_center_param3))
+            optimizer_center1.load_state_dict(torch.load(path_to_optimizer_center1))
+            optimizer_center2.load_state_dict(torch.load(path_to_optimizer_center2))
+            optimizer_center3.load_state_dict(torch.load(path_to_optimizer_center3))
+            scheduler = WarmupMultiStepLR(optimizer, cfg.SOLVER.STEPS, cfg.SOLVER.GAMMA, cfg.SOLVER.WARMUP_FACTOR,
+                                          cfg.SOLVER.WARMUP_ITERS, cfg.SOLVER.WARMUP_METHOD, start_epoch)
+        elif cfg.MODEL.PRETRAIN_CHOICE == 'imagenet':
+            start_epoch = 0
+            scheduler = WarmupMultiStepLR(optimizer, cfg.SOLVER.STEPS, cfg.SOLVER.GAMMA, cfg.SOLVER.WARMUP_FACTOR,
+                                          cfg.SOLVER.WARMUP_ITERS, cfg.SOLVER.WARMUP_METHOD)
+        else:
+            print('Only support pretrain_choice for imagenet and self, but got {}'.format(cfg.MODEL.PRETRAIN_CHOICE))
 
-    arguments = {}
-    if cfg.MODEL.IF_UNCENTAINTY == 'on':
-        do_train_part(
+        do_train_with_center_part(
             cfg,
             model,
+            center_criterion1,
+            center_criterion2,
+            center_criterion3,
             train_loader,
             val_loader,
             optimizer,
-            scheduler,      # modify for using self trained model
+            optimizer_center1,
+            optimizer_center2,
+            optimizer_center3,
+            scheduler,  # modify for using self trained model
             loss_func,
             num_query,
-            start_epoch,     # add for using self trained model
-            log_var
+            start_epoch,
+            log_var# add for using self trained model
         )
-    else:
-        do_train_part(
-            cfg,
-            model,
-            train_loader,
-            val_loader,
-            optimizer,
-            scheduler,      # modify for using self trained model
-            loss_func,
-            num_query,
-            start_epoch    # add for using self trained model
-        )
-
 
 def main():
     setup_seed(0)
