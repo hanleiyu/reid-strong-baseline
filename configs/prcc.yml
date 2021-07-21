@@ -1,9 +1,9 @@
 MODEL:
   PRETRAIN_CHOICE: 'imagenet'
   PRETRAIN_PATH: '/home/yhl/.torch/models/resnet50-19c8e357.pth'
-  METRIC_LOSS_TYPE: 'triplet_center'
+  METRIC_LOSS_TYPE: 'triplet'
   IF_LABELSMOOTH: 'off'
-  IF_WITH_CENTER: 'yes'
+  IF_WITH_CENTER: 'no'
   IF_UNCENTAINTY: 'on'
 
 INPUT:
@@ -55,7 +55,7 @@ SOLVER:
 
 TEST:
   IMS_PER_BATCH: 128
-  RE_RANKING: 'no'
+  RE_RANKING: 'yes'
   WEIGHT: "path"
   NECK_FEAT: 'after'
   FEAT_NORM: 'no'

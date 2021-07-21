@@ -381,8 +381,8 @@ class Part(nn.Module):
             else:
                 # return torch.cat((vit_feat, global_feat), 1)
                 # return torch.cat((feats[4], global_feat), 1)
-                return self.l2norm(feature_vector_list[-1])
-                # return self.l2norm(torch.cat((feature_vector_list[-1], vit_feat), 1))
+                # return self.l2norm(feature_vector_list[-1])
+                return self.l2norm(torch.cat((feature_vector_list[-1], vit_feat), 1))
                 # return torch.cat((feature_vector_list[-1], vit_feat, key_feat), 1)
 
 
