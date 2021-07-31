@@ -29,7 +29,7 @@ def make_optimizer(cfg, model, log_var=None):
     return optimizer
 
 
-def make_optimizer_with_center(cfg, model, center_criterion1, center_criterion2, center_criterion3, log_var=None):
+def make_optimizer_with_center(cfg, model, center_criterion1, center_criterion2, center_criterion3, center_criterion4, log_var=None):
     params = []
     for key, value in model.named_parameters():
         if not value.requires_grad:
@@ -51,5 +51,6 @@ def make_optimizer_with_center(cfg, model, center_criterion1, center_criterion2,
     optimizer_center1 = torch.optim.SGD(center_criterion1.parameters(), lr=cfg.SOLVER.CENTER_LR)
     optimizer_center2 = torch.optim.SGD(center_criterion2.parameters(), lr=cfg.SOLVER.CENTER_LR)
     optimizer_center3 = torch.optim.SGD(center_criterion3.parameters(), lr=cfg.SOLVER.CENTER_LR)
+    optimizer_center4 = torch.optim.SGD(center_criterion4.parameters(), lr=cfg.SOLVER.CENTER_LR)
 
-    return optimizer, optimizer_center1, optimizer_center2, optimizer_center3
+    return optimizer, optimizer_center1, optimizer_center2, optimizer_center3, optimizer_center4

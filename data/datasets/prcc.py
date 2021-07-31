@@ -22,6 +22,8 @@ class PRCC(BaseImageDataset):
         self.dataset_dir = osp.join(root, self.dataset_dir)
         # self.train_dir = osp.join(self.dataset_dir, 'train')
         # print("dataset is train")
+        # self.train_dir = osp.join(self.dataset_dir, 'trainac')
+        # print("dataset is trainac")
         self.train_dir = osp.join(self.dataset_dir, 'tvcrop3')
         print("dataset is tvcrop3")
 

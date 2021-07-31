@@ -1,19 +1,15 @@
 # encoding: utf-8
-"""
-@author:  liaoxingyu
-@contact: sherlockliao01@gmail.com
-"""
-
 import torch
 from torch import nn
 
 from .backbones.resnet import ResNet, BasicBlock, Bottleneck
-from .backbones.senet import SENet, SEResNetBottleneck, SEBottleneck, SEResNeXtBottleneck
 from .backbones.resnet_ibn_a import resnet50_ibn_a
 from .backbones.vit import vit_TransReID
 from .model_keypoints import ScoremapComputer, compute_local_features
 from .gcn import generate_adj, GCN
 from .pointnet import PointNetfeat
+from .backbones.hmr import hmr
+
 
 
 class Normalize(nn.Module):
@@ -25,7 +21,6 @@ class Normalize(nn.Module):
         norm = x.pow(self.power).sum(1, keepdim=True).pow(1. / self.power)
         out = x.div(norm)
         return out
-
 
 
 def weights_init_kaiming(m):
@@ -107,69 +102,6 @@ class Baseline(nn.Module):
             self.base = ResNet(last_stride=last_stride,
                                block=Bottleneck,
                                layers=[3, 8, 36, 3])
-
-        elif model_name == 'se_resnet50':
-            self.base = SENet(block=SEResNetBottleneck,
-                              layers=[3, 4, 6, 3],
-                              groups=1,
-                              reduction=16,
-                              dropout_p=None,
-                              inplanes=64,
-                              input_3x3=False,
-                              downsample_kernel_size=1,
-                              downsample_padding=0,
-                              last_stride=last_stride)
-        elif model_name == 'se_resnet101':
-            self.base = SENet(block=SEResNetBottleneck,
-                              layers=[3, 4, 23, 3],
-                              groups=1,
-                              reduction=16,
-                              dropout_p=None,
-                              inplanes=64,
-                              input_3x3=False,
-                              downsample_kernel_size=1,
-                              downsample_padding=0,
-                              last_stride=last_stride)
-        elif model_name == 'se_resnet152':
-            self.base = SENet(block=SEResNetBottleneck,
-                              layers=[3, 8, 36, 3],
-                              groups=1,
-                              reduction=16,
-                              dropout_p=None,
-                              inplanes=64,
-                              input_3x3=False,
-                              downsample_kernel_size=1,
-                              downsample_padding=0,
-                              last_stride=last_stride)
-        elif model_name == 'se_resnext50':
-            self.base = SENet(block=SEResNeXtBottleneck,
-                              layers=[3, 4, 6, 3],
-                              groups=32,
-                              reduction=16,
-                              dropout_p=None,
-                              inplanes=64,
-                              input_3x3=False,
-                              downsample_kernel_size=1,
-                              downsample_padding=0,
-                              last_stride=last_stride)
-        elif model_name == 'se_resnext101':
-            self.base = SENet(block=SEResNeXtBottleneck,
-                              layers=[3, 4, 23, 3],
-                              groups=32,
-                              reduction=16,
-                              dropout_p=None,
-                              inplanes=64,
-                              input_3x3=False,
-                              downsample_kernel_size=1,
-                              downsample_padding=0,
-                              last_stride=last_stride)
-        elif model_name == 'senet154':
-            self.base = SENet(block=SEBottleneck,
-                              layers=[3, 8, 36, 3],
-                              groups=64,
-                              reduction=16,
-                              dropout_p=0.2,
-                              last_stride=last_stride)
         elif model_name == 'resnet50_ibn_a':
             self.base = resnet50_ibn_a(last_stride)
 
@@ -184,7 +116,7 @@ class Baseline(nn.Module):
 
         if self.neck == 'no':
             # self.classifier = nn.Linear(self.in_planes, self.num_classes)
-            self.classifier = nn.Linear(self.in_planes, self.num_classes, bias=False)     # new add by luo
+            self.classifier = nn.Linear(self.in_planes, self.num_classes, bias=False)  # new add by luo
             self.classifier.apply(weights_init_classifier)  # new add by luo
         elif self.neck == 'bnneck':
             self.bottleneck = nn.BatchNorm1d(self.in_planes)
@@ -253,7 +185,6 @@ class Part(nn.Module):
         # self.feature6 = FeatureBlock(2176)
         # self.feature7 = FeatureBlock(1024)
 
-
         self.classifier1 = ClassBlock(neck, self.num_classes, self.in_planes)
         self.classifier2 = ClassBlock(neck, self.num_classes, self.in_planes)
         self.classifier3 = ClassBlock(neck, self.num_classes, self.in_planes)
@@ -263,6 +194,7 @@ class Part(nn.Module):
         self.classifier6 = ClassBlock(neck, self.num_classes, 2176)
         # self.classifier6 = ClassBlock(neck, self.num_classes, 2304)
         self.classifier7 = ClassBlock(neck, self.num_classes, 1024)
+        self.classifier8 = ClassBlock(neck, self.num_classes, 229)
 
         self.transformer = vit_TransReID()
 
@@ -288,13 +220,19 @@ class Part(nn.Module):
         # self.adj = generate_adj(14, self.linked_edges, self.linked_edges2, self.linked_edges3, self_connect=0.0).to(self.device)
         # self.gcn = GCN(100, 100, 100)
         # self.gcn = GCN(50, 50, 50)
-        self.gcn = GCN(128, 128, 128)
+        self.gcn = GCN(2, 128, 128)
         # self.gcn = GCN(256, 256, 256)
 
         # keypoints model
         self.scoremap_computer = ScoremapComputer(10)
         # self.scoremap_computer = nn.DataParallel(self.scoremap_computer).to(self.device)
         self.scoremap_computer = self.scoremap_computer.eval()
+
+        # 3D model
+        self.hmr = hmr('/home/yhl/.torch/models/smpl_mean_params.npz').to(self.device)
+        checkpoint = torch.load('/home/yhl/.torch/models/hmr.pt')
+        self.hmr.load_state_dict(checkpoint['model'], strict=False)
+        self.hmr = self.hmr.eval()
 
         self.bottleneck1 = nn.BatchNorm1d(self.in_planes)
         self.bottleneck1.bias.requires_grad_(False)  # no shift
@@ -310,12 +248,17 @@ class Part(nn.Module):
         self.bottleneck3.bias.requires_grad_(False)  # no shift
         self.bottleneck3.apply(weights_init_kaiming)
 
+        self.bottleneck4 = nn.BatchNorm1d(229)
+        self.bottleneck4.bias.requires_grad_(False)  # no shift
+        self.bottleneck4.apply(weights_init_kaiming)
+
         self.l2norm = Normalize(2)
 
-
-    def forward(self, x, mask=None):
+    def forward(self, x, x2, mask=None):
+        # resnet50
         global_feat = self.base(x)
 
+        # keypoint estimation
         with torch.no_grad():
             score_maps, keypoints_confidence, keypoints_location = self.scoremap_computer(x)
         feature_vector_list, keypoints_confidence = compute_local_features(
@@ -326,11 +269,11 @@ class Part(nn.Module):
         f = torch.stack(feature_vector_list, 1)
         # vit_feat = self.transformer(f)
 
-        pointfeat = PointNetfeat(global_feat=False)
-        k = pointfeat(keypoints_location.transpose(2, 1))
-        # k = pointfeat(torch.cat((keypoints_location, keypoints_confidence.unsqueeze(2).cpu()), dim=2).transpose(2, 1))
-        k = k.transpose(2, 1).cuda()
-        # k = keypoints_location.cuda()
+        # pointfeat = PointNetfeat(global_feat=False)
+        # k = pointfeat(keypoints_location.transpose(2, 1))
+        # # k = pointfeat(torch.cat((keypoints_location, keypoints_confidence.unsqueeze(2).cpu()), dim=2).transpose(2, 1))
+        # k = k.transpose(2, 1).cuda()
+        k = keypoints_location.cuda()
         self.adj = self.adj.to(k.device)
         # k_confidence = keypoints_confidence.unsqueeze(2).repeat([1, 1, 128])
         # key_feat = k_confidence * self.gcn(k, self.adj)
@@ -347,10 +290,15 @@ class Part(nn.Module):
         f = torch.cat((f, key_feat), dim=2)
         vit_feat = self.transformer(f)
 
+
+        pred_rotmat, pred_betas, pred_camera = self.hmr(x2)
+        threeDF = torch.cat((pred_rotmat.view(pred_rotmat.size()[0], -1), pred_betas, pred_camera), 1)
+
         if self.neck == 'bnneck':
             fb = self.bottleneck1(feature_vector_list[-1])
             vb = self.bottleneck2(vit_feat)
             kb = self.bottleneck3(key_global)
+            db = self.bottleneck4(threeDF)
 
         if self.training:
             # score = self.classifier1(feats[4])
@@ -363,28 +311,28 @@ class Part(nn.Module):
             # score[5] = self.classifier6(feats[5])
             # return score, feats
 
-            score = [torch.zeros(128) for _ in range(3)]
+            score = [torch.zeros(128) for _ in range(4)]
             # score[0] = self.classifier5(feature_vector_list[-1])
             # score[1] = self.classifier6(vit_feat)
             # score[2] = self.classifier7(key_global)
             score[0] = self.classifier5(fb)
             score[1] = self.classifier6(vb)
             score[2] = self.classifier7(kb)
+            score[3] = self.classifier8(db)
 
             # return score, (feature_vector_list[-1], vit_feat)
-            return score, (feature_vector_list[-1], vit_feat, key_global)
+            return score, (feature_vector_list[-1], vit_feat, key_global, threeDF)
         else:
             if self.neck_feat == 'after':
                 # return feature_vector_list[-1]
-                return self.l2norm(fb)
-                # return self.l2norm(torch.cat((fb, vb), 1))
+                # return self.l2norm(fb)
+                return self.l2norm(torch.cat((fb, vb), 1))
             else:
                 # return torch.cat((vit_feat, global_feat), 1)
                 # return torch.cat((feats[4], global_feat), 1)
-                return self.l2norm(feature_vector_list[-1])
-                # return self.l2norm(torch.cat((feature_vector_list[-1], vit_feat), 1))
+                # return self.l2norm(feature_vector_list[-1])
+                return self.l2norm(torch.cat((feature_vector_list[-1], vit_feat), 1))
                 # return torch.cat((feature_vector_list[-1], vit_feat, key_feat), 1)
-
 
     def load_param(self, trained_path):
         param_dict = torch.load(trained_path).state_dict()

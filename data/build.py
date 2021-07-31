@@ -120,6 +120,7 @@ def make_data_loader_prcc(cfg, trial=0):
 
     img_paths = glob.glob(osp.join('/home/yhl/data/prcc/rgb/queryccrop3', '*.jpg'))
     # img_paths = glob.glob(osp.join('/home/yhl/data/prcc/rgb/queryc', '*.jpg'))
+    # img_paths = glob.glob(osp.join('/home/yhl/data/prcc/rgb/queryb', '*.jpg'))
     pid_container = set()
 
     for img_path in img_paths:
