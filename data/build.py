@@ -141,6 +141,6 @@ def make_data_loader_prcc(cfg, trial=0):
 
     val_loader = DataLoader(
         val_set, batch_size=cfg.TEST.IMS_PER_BATCH, shuffle=False, num_workers=num_workers,
-        collate_fn=val_collate_fn
+        collate_fn=part_val_collate_fn
     )
     return val_loader, len(query), val_set

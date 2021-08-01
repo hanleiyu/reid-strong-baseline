@@ -293,6 +293,9 @@ class Part(nn.Module):
 
         pred_rotmat, pred_betas, pred_camera = self.hmr(x2)
         threeDF = torch.cat((pred_rotmat.view(pred_rotmat.size()[0], -1), pred_betas, pred_camera), 1)
+        # bn4 = nn.BatchNorm1d(1024)
+        # conv4 = torch.nn.Conv1d(229, 1024, 1)
+        # threeDF = bn4(conv4(torch.unsqueeze(threeDF, 2).cpu())).view(-1, 1024).cuda()
 
         if self.neck == 'bnneck':
             fb = self.bottleneck1(feature_vector_list[-1])
@@ -327,6 +330,7 @@ class Part(nn.Module):
                 # return feature_vector_list[-1]
                 # return self.l2norm(fb)
                 return self.l2norm(torch.cat((fb, vb), 1))
+                # return self.l2norm(torch.cat((fb, db), 1))
             else:
                 # return torch.cat((vit_feat, global_feat), 1)
                 # return torch.cat((feats[4], global_feat), 1)

@@ -59,8 +59,8 @@ def main():
         os.environ['CUDA_VISIBLE_DEVICES'] = cfg.MODEL.DEVICE_ID
     cudnn.benchmark = True
 
-    model = build_model(cfg, 71)
-    # model = build_part_model(cfg, 71)
+    # model = build_model(cfg, 71)
+    model = build_part_model(cfg, 71)
     model.load_param(cfg.TEST.WEIGHT)
     map = [0 for _ in range(10)]
     r1 = [0 for _ in range(10)]
