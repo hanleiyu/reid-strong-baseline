@@ -100,11 +100,13 @@ def part_evaluator(model, metrics,
         # model.train()
         with torch.no_grad():
             # data, pids, camids, mask = batch
+            # data, pids, camids = batch
             data, img2, pids, camids = batch
             data = data.to(device) if torch.cuda.device_count() >= 1 else data
-            img2 = img2.to(device) if torch.cuda.device_count() >= 1 else img2
+            # img2 = img2.to(device) if torch.cuda.device_count() >= 1 else img2
             # feat = model(data, mask)
-            feat = model(data, img2)
+            feat = model(data)
+            # feat = model(data, img2)
             return feat, pids, camids
 
     engine = Engine(_inference)

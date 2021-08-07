@@ -121,4 +121,6 @@ def make_loss_with_center(cfg, num_classes):    # modified by gu
         else:
             print('expected METRIC_LOSS_TYPE with center should be center, triplet_center'
                   'but got {}'.format(cfg.MODEL.METRIC_LOSS_TYPE))
-    return loss_func, center_criterion1, center_criterion2, center_criterion3, center_criterion4
+
+    return loss_func, center_criterion1, center_criterion2, center_criterion3
+    # return loss_func, center_criterion1, center_criterion2, center_criterion3, center_criterion4

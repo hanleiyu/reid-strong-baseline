@@ -194,7 +194,7 @@ class Part(nn.Module):
         self.classifier6 = ClassBlock(neck, self.num_classes, 2176)
         # self.classifier6 = ClassBlock(neck, self.num_classes, 2304)
         self.classifier7 = ClassBlock(neck, self.num_classes, 1024)
-        self.classifier8 = ClassBlock(neck, self.num_classes, 229)
+        # self.classifier8 = ClassBlock(neck, self.num_classes, 229)
 
         self.transformer = vit_TransReID()
 
@@ -220,7 +220,7 @@ class Part(nn.Module):
         # self.adj = generate_adj(14, self.linked_edges, self.linked_edges2, self.linked_edges3, self_connect=0.0).to(self.device)
         # self.gcn = GCN(100, 100, 100)
         # self.gcn = GCN(50, 50, 50)
-        self.gcn = GCN(2, 128, 128)
+        self.gcn = GCN(128, 128, 128)
         # self.gcn = GCN(256, 256, 256)
 
         # keypoints model
@@ -248,13 +248,14 @@ class Part(nn.Module):
         self.bottleneck3.bias.requires_grad_(False)  # no shift
         self.bottleneck3.apply(weights_init_kaiming)
 
-        self.bottleneck4 = nn.BatchNorm1d(229)
-        self.bottleneck4.bias.requires_grad_(False)  # no shift
-        self.bottleneck4.apply(weights_init_kaiming)
+        # self.bottleneck4 = nn.BatchNorm1d(229)
+        # self.bottleneck4.bias.requires_grad_(False)  # no shift
+        # self.bottleneck4.apply(weights_init_kaiming)
 
         self.l2norm = Normalize(2)
 
-    def forward(self, x, x2, mask=None):
+    def forward(self, x, mask=None):
+    # def forward(self, x, x2, mask=None):
         # resnet50
         global_feat = self.base(x)
 
@@ -269,11 +270,11 @@ class Part(nn.Module):
         f = torch.stack(feature_vector_list, 1)
         # vit_feat = self.transformer(f)
 
-        # pointfeat = PointNetfeat(global_feat=False)
-        # k = pointfeat(keypoints_location.transpose(2, 1))
+        pointfeat = PointNetfeat(global_feat=False)
+        k = pointfeat(keypoints_location.transpose(2, 1))
         # # k = pointfeat(torch.cat((keypoints_location, keypoints_confidence.unsqueeze(2).cpu()), dim=2).transpose(2, 1))
-        # k = k.transpose(2, 1).cuda()
-        k = keypoints_location.cuda()
+        k = k.transpose(2, 1).cuda()
+        # k = keypoints_location.cuda()
         self.adj = self.adj.to(k.device)
         # k_confidence = keypoints_confidence.unsqueeze(2).repeat([1, 1, 128])
         # key_feat = k_confidence * self.gcn(k, self.adj)
@@ -291,17 +292,18 @@ class Part(nn.Module):
         vit_feat = self.transformer(f)
 
 
-        pred_rotmat, pred_betas, pred_camera = self.hmr(x2)
-        threeDF = torch.cat((pred_rotmat.view(pred_rotmat.size()[0], -1), pred_betas, pred_camera), 1)
+        # pred_rotmat, pred_betas, pred_camera = self.hmr(x2)
+        # threeDF = torch.cat((pred_rotmat.view(pred_rotmat.size()[0], -1), pred_betas, pred_camera), 1)
+        # vit_feat = torch.cat((vit_feat, pred_betas), 1)
         # bn4 = nn.BatchNorm1d(1024)
-        # conv4 = torch.nn.Conv1d(229, 1024, 1)
-        # threeDF = bn4(conv4(torch.unsqueeze(threeDF, 2).cpu())).view(-1, 1024).cuda()
+        # conv4 = torch.nn.Conv1d(10, 1024, 1)
+        # threeDF = bn4(conv4(torch.unsqueeze(pred_betas, 2).cpu())).view(-1, 1024).cuda()
 
         if self.neck == 'bnneck':
             fb = self.bottleneck1(feature_vector_list[-1])
             vb = self.bottleneck2(vit_feat)
             kb = self.bottleneck3(key_global)
-            db = self.bottleneck4(threeDF)
+            # db = self.bottleneck4(threeDF)
 
         if self.training:
             # score = self.classifier1(feats[4])
@@ -314,23 +316,26 @@ class Part(nn.Module):
             # score[5] = self.classifier6(feats[5])
             # return score, feats
 
-            score = [torch.zeros(128) for _ in range(4)]
+            score = [torch.zeros(128) for _ in range(3)]
             # score[0] = self.classifier5(feature_vector_list[-1])
             # score[1] = self.classifier6(vit_feat)
             # score[2] = self.classifier7(key_global)
             score[0] = self.classifier5(fb)
             score[1] = self.classifier6(vb)
             score[2] = self.classifier7(kb)
-            score[3] = self.classifier8(db)
+            # score[3] = self.classifier8(db)
 
-            # return score, (feature_vector_list[-1], vit_feat)
-            return score, (feature_vector_list[-1], vit_feat, key_global, threeDF)
+            return score, (feature_vector_list[-1], vit_feat, key_global)
+            # return score, (feature_vector_list[-1], vit_feat, key_global, threeDF)
         else:
             if self.neck_feat == 'after':
                 # return feature_vector_list[-1]
-                # return self.l2norm(fb)
-                return self.l2norm(torch.cat((fb, vb), 1))
+                # return self.l2norm(threeDF)
+                return self.l2norm(fb)
+                # return torch.cat((fb, threeDF), 1)
+                # return self.l2norm(torch.cat((fb, vb), 1))
                 # return self.l2norm(torch.cat((fb, db), 1))
+                # return self.l2norm(torch.cat((fb, vb, db), 1))
             else:
                 # return torch.cat((vit_feat, global_feat), 1)
                 # return torch.cat((feats[4], global_feat), 1)

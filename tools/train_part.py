@@ -99,11 +99,16 @@ def train(cfg):
             )
     elif cfg.MODEL.IF_WITH_CENTER == 'yes':
         print('Train with center loss, the loss type is', cfg.MODEL.METRIC_LOSS_TYPE)
-        log_var = torch.zeros(4, requires_grad=True)
+        log_var = torch.zeros(3, requires_grad=True)
 
-        loss_func, center_criterion1, center_criterion2, center_criterion3, center_criterion4 = make_loss_with_center(cfg, num_classes)
-        optimizer, optimizer_center1, optimizer_center2, optimizer_center3, optimizer_center4 = \
-            make_optimizer_with_center(cfg, model, center_criterion1, center_criterion2, center_criterion3, center_criterion4, log_var)
+        loss_func, center_criterion1, center_criterion2, center_criterion3 = make_loss_with_center(
+            cfg, num_classes)
+        optimizer, optimizer_center1, optimizer_center2, optimizer_center3 = \
+            make_optimizer_with_center(cfg, model, center_criterion1, center_criterion2, center_criterion3, log_var)
+
+        # loss_func, center_criterion1, center_criterion2, center_criterion3, center_criterion4 = make_loss_with_center(cfg, num_classes)
+        # optimizer, optimizer_center1, optimizer_center2, optimizer_center3, optimizer_center4 = \
+        #     make_optimizer_with_center(cfg, model, center_criterion1, center_criterion2, center_criterion3, center_criterion4, log_var)
 
         # Add for using self trained model
         if cfg.MODEL.PRETRAIN_CHOICE == 'self':
@@ -114,23 +119,23 @@ def train(cfg):
             path_to_center_param1 = cfg.MODEL.PRETRAIN_PATH.replace('model', 'center_param1')
             path_to_center_param2 = cfg.MODEL.PRETRAIN_PATH.replace('model', 'center_param2')
             path_to_center_param3 = cfg.MODEL.PRETRAIN_PATH.replace('model', 'center_param3')
-            path_to_center_param4 = cfg.MODEL.PRETRAIN_PATH.replace('model', 'center_param4')
+            # path_to_center_param4 = cfg.MODEL.PRETRAIN_PATH.replace('model', 'center_param4')
             print('Path to the checkpoint of center_param:', path_to_center_param1)
             path_to_optimizer_center1 = cfg.MODEL.PRETRAIN_PATH.replace('model', 'optimizer_center1')
             path_to_optimizer_center2 = cfg.MODEL.PRETRAIN_PATH.replace('model', 'optimizer_center2')
             path_to_optimizer_center3 = cfg.MODEL.PRETRAIN_PATH.replace('model', 'optimizer_center3')
-            path_to_optimizer_center4 = cfg.MODEL.PRETRAIN_PATH.replace('model', 'optimizer_center4')
+            # path_to_optimizer_center4 = cfg.MODEL.PRETRAIN_PATH.replace('model', 'optimizer_center4')
             print('Path to the checkpoint of optimizer_center:', path_to_optimizer_center1)
             model.load_state_dict(torch.load(cfg.MODEL.PRETRAIN_PATH))
             optimizer.load_state_dict(torch.load(path_to_optimizer))
             center_criterion1.load_state_dict(torch.load(path_to_center_param1))
             center_criterion2.load_state_dict(torch.load(path_to_center_param2))
             center_criterion3.load_state_dict(torch.load(path_to_center_param3))
-            center_criterion3.load_state_dict(torch.load(path_to_center_param4))
+            # center_criterion3.load_state_dict(torch.load(path_to_center_param4))
             optimizer_center1.load_state_dict(torch.load(path_to_optimizer_center1))
             optimizer_center2.load_state_dict(torch.load(path_to_optimizer_center2))
             optimizer_center3.load_state_dict(torch.load(path_to_optimizer_center3))
-            optimizer_center3.load_state_dict(torch.load(path_to_optimizer_center4))
+            # optimizer_center3.load_state_dict(torch.load(path_to_optimizer_center4))
             scheduler = WarmupMultiStepLR(optimizer, cfg.SOLVER.STEPS, cfg.SOLVER.GAMMA, cfg.SOLVER.WARMUP_FACTOR,
                                           cfg.SOLVER.WARMUP_ITERS, cfg.SOLVER.WARMUP_METHOD, start_epoch)
         elif cfg.MODEL.PRETRAIN_CHOICE == 'imagenet':
@@ -146,14 +151,14 @@ def train(cfg):
             center_criterion1,
             center_criterion2,
             center_criterion3,
-            center_criterion4,
+
             train_loader,
             val_loader,
             optimizer,
             optimizer_center1,
             optimizer_center2,
             optimizer_center3,
-            optimizer_center4,
+
             scheduler,  # modify for using self trained model
             loss_func,
             num_query,
