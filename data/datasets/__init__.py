@@ -11,6 +11,7 @@ from .veri import VeRi
 from .dataset_loader import ImageDataset, ImageDatasetPart
 from .vc import VC
 from .prcc import PRCC
+from .ltcc import LTCC
 
 __factory = {
     'market1501': Market1501,
@@ -19,7 +20,8 @@ __factory = {
     'msmt17': MSMT17,
     'veri': VeRi,
     'vc': VC,
-    'prcc': PRCC
+    'prcc': PRCC,
+    'ltcc': LTCC
 }
 
 

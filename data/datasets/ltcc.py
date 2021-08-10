@@ -7,26 +7,20 @@ import os.path as osp
 from .bases import BaseImageDataset
 
 
-class PRCC(BaseImageDataset):
+class LTCC(BaseImageDataset):
     """
     Dataset statistics:
-    # identities: 221
+    # identities: 152
     # images: 17887 (train) + 10800 (test gallery(A):3383 query:7417(B 3873 C 3543)) + 5003 (val)
     """
-    dataset_dir = 'prcc/rgb'
+    dataset_dir = 'ltcc'
 
     def __init__(self, root='/home/yhl/data', verbose=True, **kwargs):
-        super(PRCC, self).__init__()
+        super(LTCC, self).__init__()
         self.dataset_dir = osp.join(root, self.dataset_dir)
-        # self.train_dir = osp.join(self.dataset_dir, 'train')
-        # print("dataset is train")
-        # self.train_dir = osp.join(self.dataset_dir, 'trainac')
-        # print("dataset is trainac")
-        self.train_dir = osp.join(self.dataset_dir, 'tvcrop3')
-        print("dataset is tvcrop3")
-
-        self.query_dir = osp.join(self.dataset_dir, 'queryc')
-        self.gallery_dir = osp.join(self.dataset_dir, 'gallery')
+        self.train_dir = osp.join(self.dataset_dir, 'train')
+        self.query_dir = osp.join(self.dataset_dir, 'query')
+        self.gallery_dir = osp.join(self.dataset_dir, 'test')
 
         self._check_before_run()
 
@@ -35,7 +29,7 @@ class PRCC(BaseImageDataset):
         gallery = self._process_dir(self.gallery_dir, relabel=False)
 
         if verbose:
-            print("=> PRCC loaded")
+            print("=> LTCC loaded")
             self.print_dataset_statistics(train, query, gallery)
 
         self.train = train
@@ -58,20 +52,7 @@ class PRCC(BaseImageDataset):
             raise RuntimeError("'{}' is not available".format(self.gallery_dir))
 
     def _process_dir(self, dir_path, relabel=False):
-        if dir_path.find("gallery") != -1:
-            ids = ['188', '005', '091', '309', '075', '162', '182', '223', '061', '006', '321', '324', '057',
-                   '279', '156', '328', '152', '282', '118', '004', '099', '319', '257', '008', '272', '214',
-                   '058', '146', '112', '230', '094', '186', '323', '120', '242', '071', '320', '264', '265',
-                   '001', '072', '097', '018', '056', '069', '030', '096', '263', '062', '002', '070', '216',
-                   '167', '117', '159', '212', '059', '007', '073', '064', '219', '326', '060', '202', '322',
-                   '183', '063', '260', '325', '028', '074']
-            random.seed(0)
-            img_paths = []
-            for id in ids:
-                img = glob.glob(osp.join(dir_path, id + '*.jpg'))
-                img_paths.append(random.choice(img))
-        else:
-            img_paths = glob.glob(osp.join(dir_path, '*.jpg'))
+        img_paths = glob.glob(osp.join(dir_path, '*.png'))
 
         pid_container = set()
         for img_path in img_paths:
@@ -84,7 +65,7 @@ class PRCC(BaseImageDataset):
 
         for img_path in img_paths:
             pid = int(img_path.split("/")[-1][:3])
-            camid = img_path.split("/")[-1][4]
+            camid = int(img_path.split("/")[-1][4])
             if relabel: pid = pid2label[pid]
             dataset.append((img_path, pid, camid))
 

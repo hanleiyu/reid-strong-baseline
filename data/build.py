@@ -13,7 +13,7 @@ from .transforms import build_transforms
 import random
 import glob
 import os.path as osp
-import torch
+
 
 def make_data_loader(cfg):
     train_transforms = build_transforms(cfg, is_train=True)
@@ -110,12 +110,9 @@ def make_data_loader_prcc(cfg, trial=0):
         pid_container.add(pid)
 
     gallery = []
-    # kps = torch.load('/home/yhl/data/prcc/rgb/part4n/maskg.pt')
     for img_path in img_paths:
         pid = int(img_path.split("/")[-1][:3])
         camid = img_path.split("/")[-1][4]
-        # mask = kps[img_path.split("/")[-1][:-4]]/
-        # gallery.append((img_path, pid, camid, mask))
         gallery.append((img_path, pid, camid))
 
     img_paths = glob.glob(osp.join('/home/yhl/data/prcc/rgb/queryccrop3', '*.jpg'))
@@ -129,12 +126,96 @@ def make_data_loader_prcc(cfg, trial=0):
         pid_container.add(pid)
 
     query = []
-    # kps = torch.load('/home/yhl/data/prcc/rgb/part4n/maskq.pt')
     for img_path in img_paths:
         pid = int(img_path.split("/")[-1][:3])
         camid = img_path.split("/")[-1][4]
-        # mask = kps[img_path.split("/")[-1][:-4]]
-        # query.append((img_path, pid, camid, mask))
+        query.append((img_path, pid, camid))
+
+    val_set = ImageDatasetPart(query + gallery, transform=val_transforms)
+
+    val_loader = DataLoader(
+        val_set, batch_size=cfg.TEST.IMS_PER_BATCH, shuffle=False, num_workers=num_workers,
+        collate_fn=part_val_collate_fn
+    )
+    return val_loader, len(query), val_set
+
+
+def make_data_loader_vc(cfg, trial=0):
+    val_transforms = build_transforms(cfg, is_train=False)
+    num_workers = cfg.DATALOADER.NUM_WORKERS
+
+    random.seed(trial)
+    ids = []
+    with open('/home/yhl/data/vc/test.txt', 'r') as f:
+        for line in f:
+            ids.append("".join(line.strip('\n').split(',')))
+    img_paths = []
+    for id in ids:
+        img = glob.glob(osp.join('/home/yhl/data/vc/gallerycrop', id.zfill(4) + "-03" + '*.jpg')) + \
+               glob.glob(osp.join('/home/yhl/data/vc/gallerycrop', id.zfill(4) + "-04" + '*.jpg'))
+        img.sort()
+        img_paths.append(img)
+
+    gallery = []
+    for img_path in img_paths:
+        for img in img_path:
+            pid = int(img.split("/")[-1][:4])
+            camid = int(img[-11])
+            gallery.append((img, pid, camid))
+
+    img_paths = []
+    for id in ids:
+        img = glob.glob(osp.join('/home/yhl/data/vc/querycrop', id.zfill(4) + "-03" + '*.jpg')) + \
+              glob.glob(osp.join('/home/yhl/data/vc/querycrop', id.zfill(4) + "-04" + '*.jpg'))
+        img.sort()
+        if len(img) > 0:
+            img_paths.append(random.choice(img))
+
+    query = []
+    for img_path in img_paths:
+        pid = int(img_path.split("/")[-1][:4])
+        camid = int(img_path[-11])
+        query.append((img_path, pid, camid))
+
+    val_set = ImageDatasetPart(query + gallery, transform=val_transforms)
+
+    val_loader = DataLoader(
+        val_set, batch_size=cfg.TEST.IMS_PER_BATCH, shuffle=False, num_workers=num_workers,
+        collate_fn=part_val_collate_fn
+    )
+    return val_loader, len(query), val_set
+
+
+def make_data_loader_ltcc(cfg, trial=0):
+    val_transforms = build_transforms(cfg, is_train=False)
+    num_workers = cfg.DATALOADER.NUM_WORKERS
+
+    random.seed(trial)
+    ids = []
+    with open('/home/yhl/data/ltcc/info/cloth-change_id_test.txt', 'r') as f:
+        for line in f:
+            ids.append("".join(line.strip('\n').split(',')))
+    img_paths = []
+    for id in ids:
+        img = glob.glob(osp.join('/home/yhl/data/ltcc/test', id.zfill(3) + '*.png'))
+        img_paths.append(img)
+
+    gallery = []
+    for img_path in img_paths:
+        for img in img_path:
+            pid = int(img.split("/")[-1][:3])
+            camid = int(img.split("/")[-1][4])
+            gallery.append((img, pid, camid))
+
+    img_paths = []
+    for id in ids:
+        img = glob.glob(osp.join('/home/yhl/data/ltcc/query', id.zfill(3) + '*.png'))
+        img_paths.append(random.choice(img))
+
+    query = []
+    for img_path in img_paths:
+        pid = int(img_path.split("/")[-1][:3])
+        camid = int(img_path.split("/")[-1][4])
         query.append((img_path, pid, camid))
 
     val_set = ImageDatasetPart(query + gallery, transform=val_transforms)

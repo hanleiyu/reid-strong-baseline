@@ -254,8 +254,8 @@ class Part(nn.Module):
 
         self.l2norm = Normalize(2)
 
-    def forward(self, x, mask=None):
-    # def forward(self, x, x2, mask=None):
+    # def forward(self, x, mask=None):
+    def forward(self, x, x2, mask=None):
         # resnet50
         global_feat = self.base(x)
 
@@ -331,9 +331,9 @@ class Part(nn.Module):
             if self.neck_feat == 'after':
                 # return feature_vector_list[-1]
                 # return self.l2norm(threeDF)
-                return self.l2norm(fb)
+                # return self.l2norm(fb)
                 # return torch.cat((fb, threeDF), 1)
-                # return self.l2norm(torch.cat((fb, vb), 1))
+                return self.l2norm(torch.cat((fb, vb), 1))
                 # return self.l2norm(torch.cat((fb, db), 1))
                 # return self.l2norm(torch.cat((fb, vb, db), 1))
             else:

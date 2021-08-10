@@ -1,8 +1,6 @@
 # encoding: utf-8
 
 import glob
-import numpy as np
-import torch
 import os.path as osp
 
 from .bases import BaseImageDataset
@@ -10,16 +8,11 @@ from .bases import BaseImageDataset
 
 class VC(BaseImageDataset):
     """
-    VC
-    Reference:
-    Wan et al. When Person Re-identification Meets Changing Clothes. CVPR 2020.
-    URL: https://wanfb.github.io/dataset.html
-
     Dataset statistics:
     # identities: 512
     # images: 9449 (train) + 1020 (query) + 8591 (gallery)
     """
-    dataset_dir = 'VC'
+    dataset_dir = 'vc'
 
     def __init__(self, root='/home/yhl/data', verbose=True, **kwargs):
         super(VC, self).__init__()
@@ -58,34 +51,24 @@ class VC(BaseImageDataset):
             raise RuntimeError("'{}' is not available".format(self.gallery_dir))
 
     def _process_dir(self, dir_path, relabel=False):
-        if dir_path.find("train") != -1:
-            kps = torch.load('/home/yhl/data/VC/part5nc/maskt.pt')
-        elif dir_path.find("gallery") != -1:
-            kps = torch.load('/home/yhl/data/VC/part5nc/maskg.pt')
-        elif dir_path.find("query") != -1:
-            kps = torch.load('/home/yhl/data/VC/part5nc/maskq.pt')
-
         img_paths = glob.glob(osp.join(dir_path, '*.jpg'))
 
         pid_container = set()
         for img_path in img_paths:
-            pid = int(img_path[-17:-13])
+            pid = int(img_path.split("/")[-1][:4])
             if pid == -1: continue  # junk images are just ignored
             pid_container.add(pid)
         pid2label = {pid: label for label, pid in enumerate(pid_container)}
 
         dataset = []
         for img_path in img_paths:
-            pid = int(img_path[-17:-13])
+            pid = int(img_path.split("/")[-1][:4])
             camid = int(img_path[-11])
-            # mask = kps[img_path[-17:-4]]
-            mask = kps[img_path[-17:-4]]["mask"]
-            c = kps[img_path[-17:-4]]["confidence"]
             if pid == -1: continue  # junk images are just ignored
             assert 0 <= pid <= 1501  # pid == 0 means background
             assert 1 <= camid <= 6
             camid -= 1  # index starts from 0
             if relabel: pid = pid2label[pid]
-            dataset.append((img_path, pid, camid, mask, c))
+            dataset.append((img_path, pid, camid))
 
         return dataset
