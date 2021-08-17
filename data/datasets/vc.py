@@ -63,12 +63,13 @@ class VC(BaseImageDataset):
         dataset = []
         for img_path in img_paths:
             pid = int(img_path.split("/")[-1][:4])
+            clothid = int(img_path.split("/")[-1][9])
             camid = int(img_path[-11])
             if pid == -1: continue  # junk images are just ignored
             assert 0 <= pid <= 1501  # pid == 0 means background
             assert 1 <= camid <= 6
             camid -= 1  # index starts from 0
             if relabel: pid = pid2label[pid]
-            dataset.append((img_path, pid, camid))
+            dataset.append((img_path, pid, clothid, camid))
 
         return dataset

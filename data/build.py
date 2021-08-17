@@ -53,6 +53,7 @@ def make_data_loader(cfg):
 
 
 def make_data_loader_part(cfg):
+    print("hello")
     train_transforms = build_transforms(cfg, is_train=True)
     val_transforms = build_transforms(cfg, is_train=False)
     num_workers = cfg.DATALOADER.NUM_WORKERS
@@ -97,26 +98,22 @@ def make_data_loader_prcc(cfg, trial=0):
           '167', '117', '159', '212', '059', '007', '073', '064', '219', '326', '060', '202', '322',
           '183', '063', '260', '325', '028', '074']
     img_paths = []
+    # img_paths = glob.glob(osp.join('/home/yhl/data/prcc/rgb/test/gallerycrop3', '*.jpg'))
     for id in ids:
-        img = glob.glob(osp.join('/home/yhl/data/prcc/rgb/gallerycrop3', id + '*.jpg'))
-        # img = glob.glob(osp.join('/home/yhl/data/prcc/rgb/gallery', id + '*.jpg'))
+        # img = glob.glob(osp.join('/home/yhl/data/prcc/rgb/test/gallerycrop3', id + '*.jpg'))
+        img = glob.glob(osp.join('/home/yhl/data/prcc/rgb/test/A', id + '*.jpg'))
         img.sort()
         img_paths.append(random.choice(img))
-    pid_container = set()
-
-    for img_path in img_paths:
-        pid = int(img_path.split("/")[-1][:3])
-        if pid == -1: continue  # junk images are just ignored
-        pid_container.add(pid)
 
     gallery = []
     for img_path in img_paths:
         pid = int(img_path.split("/")[-1][:3])
+        clothid = 0
         camid = img_path.split("/")[-1][4]
-        gallery.append((img_path, pid, camid))
+        gallery.append((img_path, pid, clothid, camid, ""))
 
-    img_paths = glob.glob(osp.join('/home/yhl/data/prcc/rgb/queryccrop3', '*.jpg'))
-    # img_paths = glob.glob(osp.join('/home/yhl/data/prcc/rgb/queryc', '*.jpg'))
+    # img_paths = glob.glob(osp.join('/home/yhl/data/prcc/rgb/test/queryccrop3', '*.jpg'))
+    img_paths = glob.glob(osp.join('/home/yhl/data/prcc/rgb/test/C', '*.jpg'))
     # img_paths = glob.glob(osp.join('/home/yhl/data/prcc/rgb/queryb', '*.jpg'))
     pid_container = set()
 
@@ -128,8 +125,9 @@ def make_data_loader_prcc(cfg, trial=0):
     query = []
     for img_path in img_paths:
         pid = int(img_path.split("/")[-1][:3])
+        clothid = 0
         camid = img_path.split("/")[-1][4]
-        query.append((img_path, pid, camid))
+        query.append((img_path, pid, clothid, camid, ""))
 
     val_set = ImageDatasetPart(query + gallery, transform=val_transforms)
 
@@ -151,8 +149,8 @@ def make_data_loader_vc(cfg, trial=0):
             ids.append("".join(line.strip('\n').split(',')))
     img_paths = []
     for id in ids:
-        img = glob.glob(osp.join('/home/yhl/data/vc/gallerycrop', id.zfill(4) + "-03" + '*.jpg')) + \
-               glob.glob(osp.join('/home/yhl/data/vc/gallerycrop', id.zfill(4) + "-04" + '*.jpg'))
+        img = glob.glob(osp.join('/home/yhl/data/vc/gallery', id.zfill(4) + "-03" + '*.jpg')) + \
+               glob.glob(osp.join('/home/yhl/data/vc/gallery', id.zfill(4) + "-04" + '*.jpg'))
         img.sort()
         img_paths.append(img)
 
@@ -160,22 +158,26 @@ def make_data_loader_vc(cfg, trial=0):
     for img_path in img_paths:
         for img in img_path:
             pid = int(img.split("/")[-1][:4])
+            clothid = int(img_path.split("/")[-1][9])
             camid = int(img[-11])
-            gallery.append((img, pid, camid))
+            gallery.append((img, pid, clothid, camid))
 
     img_paths = []
     for id in ids:
-        img = glob.glob(osp.join('/home/yhl/data/vc/querycrop', id.zfill(4) + "-03" + '*.jpg')) + \
-              glob.glob(osp.join('/home/yhl/data/vc/querycrop', id.zfill(4) + "-04" + '*.jpg'))
+        img = glob.glob(osp.join('/home/yhl/data/vc/query', id.zfill(4) + "-03" + '*.jpg')) + \
+              glob.glob(osp.join('/home/yhl/data/vc/query', id.zfill(4) + "-04" + '*.jpg'))
         img.sort()
-        if len(img) > 0:
-            img_paths.append(random.choice(img))
+        img_paths.append(img)
+        # if len(img) > 0:
+        #     img_paths.append(random.choice(img))
 
     query = []
     for img_path in img_paths:
-        pid = int(img_path.split("/")[-1][:4])
-        camid = int(img_path[-11])
-        query.append((img_path, pid, camid))
+        for img in img_path:
+            pid = int(img.split("/")[-1][:4])
+            clothid = int(img_path.split("/")[-1][9])
+            camid = int(img[-11])
+            query.append((img, pid, clothid, camid))
 
     val_set = ImageDatasetPart(query + gallery, transform=val_transforms)
 
@@ -204,19 +206,22 @@ def make_data_loader_ltcc(cfg, trial=0):
     for img_path in img_paths:
         for img in img_path:
             pid = int(img.split("/")[-1][:3])
-            camid = int(img.split("/")[-1][4])
-            gallery.append((img, pid, camid))
+            clothid = int(img.split("/")[-1][4])
+            camid = img.split("/")[-1][7]
+            gallery.append((img, pid, clothid, camid))
 
     img_paths = []
     for id in ids:
         img = glob.glob(osp.join('/home/yhl/data/ltcc/query', id.zfill(3) + '*.png'))
-        img_paths.append(random.choice(img))
+        img_paths.append(img)
 
     query = []
     for img_path in img_paths:
-        pid = int(img_path.split("/")[-1][:3])
-        camid = int(img_path.split("/")[-1][4])
-        query.append((img_path, pid, camid))
+        for img in img_path:
+            pid = int(img.split("/")[-1][:3])
+            clothid = int(img.split("/")[-1][4])
+            camid = img.split("/")[-1][7]
+            query.append((img, pid, clothid, camid))
 
     val_set = ImageDatasetPart(query + gallery, transform=val_transforms)
 

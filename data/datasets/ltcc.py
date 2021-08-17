@@ -65,8 +65,9 @@ class LTCC(BaseImageDataset):
 
         for img_path in img_paths:
             pid = int(img_path.split("/")[-1][:3])
-            camid = int(img_path.split("/")[-1][4])
+            clothid = int(img_path.split("/")[-1][4])
+            camid = img_path.split("/")[-1][7]
             if relabel: pid = pid2label[pid]
-            dataset.append((img_path, pid, camid))
+            dataset.append((img_path, pid, clothid, camid))
 
         return dataset

@@ -13,7 +13,8 @@ from ignite.handlers import ModelCheckpoint, Timer
 from ignite.metrics import RunningAverage
 
 from utils.reid_metric import R1_mAP
-from numpy import *
+import numpy
+import copy
 
 global ITER
 ITER = 0
@@ -107,17 +108,41 @@ def part_trainer_with_center(model, center_criterion1, center_criterion2, center
         optimizer_center1.zero_grad()
         optimizer_center2.zero_grad()
         optimizer_center3.zero_grad()
-        img, img2, target, _ = batch
+        img, target, mask, _, _ = batch
         img = img.to(device) if torch.cuda.device_count() >= 1 else img
-        img2 = img2.to(device) if torch.cuda.device_count() >= 1 else img2
-        target = target.to(device) if torch.cuda.device_count() >= 1 else target
-        score, feat = model(img, img2)
+
+        mask = mask.cuda()  # [64, 6, 256, 128]
+        mask_i = mask.argmax(dim=1).unsqueeze(dim=1)  # [64, 1, 256, 128]
+        mask_i = mask_i.expand_as(img)
+        img_a = copy.deepcopy(img)
+
+        # upper clothes sampling
+        index = numpy.random.permutation(img.shape[0])
+        img_r = img[index]  # [64, 3, 256, 128]
+        msk_r = mask_i[index]  # [64, 6, 256, 128]
+        img_a[mask_i == 2] = img_r[msk_r == 2]
+
+        # pant sampling
+        index = numpy.random.permutation(img.shape[0])
+        img_r = img[index]  # [64, 3, 256, 128]
+        msk_r = mask_i[index]  # [64, 6, 256, 128]
+        img_a[mask_i == 3] = img_r[msk_r == 3]
+
+        img_c = torch.cat([img, img_a], dim=0)
+        target_c = torch.cat([target, target], dim=0)
+        target_c = target_c.to(device)
+        score, feat = model(img_c)
+
+        # img2 = img2.to(device) if torch.cuda.device_count() >= 1 else img2
+        # target = target.to(device) if torch.cuda.device_count() >= 1 else target
+        # score, feat = model(img, img2)
+
         loss_part = [0 for _ in range(len(feat))]
         acc = [0 for _ in range(len(feat))]
         ten = [torch.tensor(1.0).cuda() for _ in range(len(feat))]
         for i in range(len(feat)):
             if log_var is not None:
-                loss_part[i] = loss_fn(score[i], feat[i], target, log_var[i], i)
+                loss_part[i] = loss_fn(score[i], feat[i], target_c, log_var[i], i)
                 # if i == len(feat) - 1:
                 #     loss_part[i] = loss_fn(score[i], feat[i], target, log_var[i])[0]
                 # else:
@@ -128,7 +153,7 @@ def part_trainer_with_center(model, center_criterion1, center_criterion2, center
                 #     loss_part[i] = loss_fn(score[i], feat[i], target)[0]
                 # else:
                 #     loss_part[i] = loss_fn(score[i], feat[i], target)[1]
-            acc[i] = (score[i].max(1)[1] == target).float().mean()
+            acc[i] = (score[i].max(1)[1] == target_c).float().mean()
         torch.autograd.backward(loss_part, ten)
         optimizer.step()
         for param in center_criterion1.parameters():
@@ -243,10 +268,10 @@ def part_evaluator(model, metrics, device=None):
     def _inference(engine, batch):
         model.eval()
         with torch.no_grad():
-            data, img2, pids, camids = batch
-            # data, pids, camids, masks = batch
+            # data, img2, pids, camids = batch
+            data, pids, camids = batch
             data = data.to(device) if torch.cuda.device_count() >= 1 else data
-            feat = model(data, img2)
+            feat = model(data)
             # feat = model(data, masks)
             return feat, pids, camids
 

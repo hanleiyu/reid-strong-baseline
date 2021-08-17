@@ -18,15 +18,15 @@ class PRCC(BaseImageDataset):
     def __init__(self, root='/home/yhl/data', verbose=True, **kwargs):
         super(PRCC, self).__init__()
         self.dataset_dir = osp.join(root, self.dataset_dir)
-        # self.train_dir = osp.join(self.dataset_dir, 'train')
-        # print("dataset is train")
+        self.train_dir = osp.join(self.dataset_dir, 'train')
+        print("dataset is train")
         # self.train_dir = osp.join(self.dataset_dir, 'trainac')
         # print("dataset is trainac")
-        self.train_dir = osp.join(self.dataset_dir, 'tvcrop3')
-        print("dataset is tvcrop3")
+        # self.train_dir = osp.join(self.dataset_dir, 'tvcrop3')
+        # print("dataset is tvcrop3")
 
-        self.query_dir = osp.join(self.dataset_dir, 'queryc')
-        self.gallery_dir = osp.join(self.dataset_dir, 'gallery')
+        self.query_dir = osp.join(self.dataset_dir, 'test', 'C')
+        self.gallery_dir = osp.join(self.dataset_dir, 'test', 'A')
 
         self._check_before_run()
 
@@ -84,8 +84,13 @@ class PRCC(BaseImageDataset):
 
         for img_path in img_paths:
             pid = int(img_path.split("/")[-1][:3])
+            clothid = 0
             camid = img_path.split("/")[-1][4]
+            if dir_path.find("train") != -1:
+                msk_path = osp.join('/home/yhl/data/prcc/train_mask', img_path.split("/")[-1][:-3] + 'npy')
+            else:
+                msk_path = ""
             if relabel: pid = pid2label[pid]
-            dataset.append((img_path, pid, camid))
+            dataset.append((img_path, pid, clothid, camid, msk_path))
 
         return dataset

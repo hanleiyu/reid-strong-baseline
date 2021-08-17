@@ -15,11 +15,13 @@ def val_collate_fn(batch):
 
 
 def part_train_collate_fn(batch):
-    imgs, imgs2, pids, camids, _ = zip(*batch)
+    imgs, pids, masks, clothids, camids, _ = zip(*batch)
     pids = torch.tensor(pids, dtype=torch.int64)
-    return torch.stack(imgs, dim=0), torch.stack(imgs2, dim=0), pids, camids
+    clothids = torch.tensor(clothids, dtype=torch.int64)
+    # camids = torch.tensor(camids, dtype=torch.int64)
+    return torch.stack(imgs, dim=0), pids, torch.cat(masks), clothids, camids
 
 
 def part_val_collate_fn(batch):
-    imgs, imgs2, pids, camids, _ = zip(*batch)
-    return torch.stack(imgs, dim=0), torch.stack(imgs2, dim=0), pids, camids
+    imgs, pids, _, clothids, camids, _ = zip(*batch)
+    return torch.stack(imgs, dim=0), pids, clothids, camids

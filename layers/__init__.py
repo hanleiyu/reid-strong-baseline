@@ -6,7 +6,7 @@
 
 import torch.nn.functional as F
 
-from .triplet_loss import TripletLoss, TripletLossUncertainty, CrossEntropyLabelSmooth, CrossEntropyLabelSmoothUncertainty
+from .triplet_loss import TripletLoss, TripletLossUncertainty, CrossEntropyLabelSmooth, CrossEntropyLabelSmoothUncertainty, FeatLoss
 from .center_loss import CenterLoss
 import torch
 
@@ -84,6 +84,8 @@ def make_loss_with_center(cfg, num_classes):    # modified by gu
         xent = CrossEntropyLabelSmooth(num_classes=num_classes)     # new add by luo
         print("label smooth on, numclasses:", num_classes)
 
+    feat_loss = FeatLoss()
+
     def loss_func(score, feat, target, log_var=None, i=0):
         if i == 0:
             center_criterion = center_criterion1
@@ -111,7 +113,8 @@ def make_loss_with_center(cfg, num_classes):    # modified by gu
                 if cfg.MODEL.IF_UNCENTAINTY == 'on':
                     return torch.exp(-log_var).cuda() * \
                            (F.cross_entropy(score, target) + triplet(feat, target)[0] +
-                            cfg.SOLVER.CENTER_LOSS_WEIGHT * center_criterion(feat, target)) \
+                            cfg.SOLVER.CENTER_LOSS_WEIGHT * center_criterion(feat, target) +
+                            feat_loss(feat[0:64], feat[64:])) \
                            + log_var.cuda()
                 else:
                     return F.cross_entropy(score, target) + \
