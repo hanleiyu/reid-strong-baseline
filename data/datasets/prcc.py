@@ -86,11 +86,12 @@ class PRCC(BaseImageDataset):
             pid = int(img_path.split("/")[-1][:3])
             clothid = 0
             camid = img_path.split("/")[-1][4]
-            if dir_path.find("train") != -1:
-                msk_path = osp.join('/home/yhl/data/prcc/train_mask', img_path.split("/")[-1][:-3] + 'npy')
-            else:
-                msk_path = ""
+            # if dir_path.find("train") != -1:
+            #     msk_path = osp.join('/home/yhl/data/prcc/train_mask', img_path.split("/")[-1][:-3] + 'npy')
+            # else:
+            #     msk_path = ""
             if relabel: pid = pid2label[pid]
-            dataset.append((img_path, pid, clothid, camid, msk_path))
+            dataset.append((img_path, pid, clothid, camid))
+            # dataset.append((img_path, pid, clothid, camid, msk_path))
 
         return dataset

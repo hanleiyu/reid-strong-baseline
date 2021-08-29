@@ -48,7 +48,7 @@ class R1_mAP(Metric):
         # gallery
         gf = feats[self.num_query:]
         g_pids = np.asarray(self.pids[self.num_query:])
-        g_clothids = np.asarray(self.clothids[:self.num_query])
+        g_clothids = np.asarray(self.clothids[self.num_query:])
         g_camids = np.asarray(self.camids[self.num_query:])
         m, n = qf.shape[0], gf.shape[0]
         distmat = torch.pow(qf, 2).sum(dim=1, keepdim=True).expand(m, n) + \

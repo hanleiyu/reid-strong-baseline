@@ -158,7 +158,7 @@ def make_data_loader_vc(cfg, trial=0):
     for img_path in img_paths:
         for img in img_path:
             pid = int(img.split("/")[-1][:4])
-            clothid = int(img_path.split("/")[-1][9])
+            clothid = int(img.split("/")[-1][9])
             camid = int(img[-11])
             gallery.append((img, pid, clothid, camid))
 
@@ -175,7 +175,7 @@ def make_data_loader_vc(cfg, trial=0):
     for img_path in img_paths:
         for img in img_path:
             pid = int(img.split("/")[-1][:4])
-            clothid = int(img_path.split("/")[-1][9])
+            clothid = int(img.split("/")[-1][9])
             camid = int(img[-11])
             query.append((img, pid, clothid, camid))
 

@@ -59,21 +59,21 @@ class ImageDatasetPart(Dataset):
         return len(self.dataset)
 
     def __getitem__(self, index):
-        img_path, pid, clothid, camid, msk_path = self.dataset[index]
+        img_path, pid, clothid, camid = self.dataset[index]
         img = read_image(img_path)
 
         if self.transform is not None:
             img = self.transform(img)
 
-        # img2 = rgb_processing(img.permute(1,2,0).cpu(), np.array([64, 128]), 1.28, np.ones(3))
-        # img2 = torch.from_numpy(img2).float()
-        if msk_path != "":
-            msk = np.load(msk_path)  # [256, 128, 14], min=6.8e-7, max=0.99
-            msk = torch.from_numpy(msk).permute(2, 0, 1).unsqueeze(dim=0)  # [1, 14, 256, 128]
-            msk = torch.nn.functional.interpolate(msk, size=(256, 128), mode='bilinear', align_corners=True)
-        else:
-            msk = torch.empty([0])
-        return img, pid, msk, clothid, camid, img_path
+        img2 = rgb_processing(img.permute(1,2,0).cpu(), np.array([64, 128]), 1.28, np.ones(3))
+        img2 = torch.from_numpy(img2).float()
+        # if msk_path != "":
+        #     msk = np.load(msk_path)  # [256, 128, 14], min=6.8e-7, max=0.99
+        #     msk = torch.from_numpy(msk).permute(2, 0, 1).unsqueeze(dim=0)  # [1, 14, 256, 128]
+        #     msk = torch.nn.functional.interpolate(msk, size=(256, 128), mode='bilinear', align_corners=True)
+        # else:
+        #     msk = torch.empty([0])
+        return img, pid, img2, clothid, camid, img_path
 
 
 def get_transform(center, scale, res, rot=0):

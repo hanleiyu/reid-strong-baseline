@@ -15,7 +15,7 @@ def val_collate_fn(batch):
 
 
 def part_train_collate_fn(batch):
-    imgs, pids, masks, clothids, camids, _ = zip(*batch)
+    imgs, pids, img2s, clothids, camids, _ = zip(*batch)
     pids = torch.tensor(pids, dtype=torch.int64)
     clothids = torch.tensor(clothids, dtype=torch.int64)
     # camids = torch.tensor(camids, dtype=torch.int64)
