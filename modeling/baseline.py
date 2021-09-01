@@ -4,11 +4,11 @@ from torch import nn
 
 from .backbones.resnet import ResNet, BasicBlock, Bottleneck
 from .backbones.resnet_ibn_a import resnet50_ibn_a
-from .backbones.vit import vit_TransReID
+from .backbones.vit import vit_TransReID, vit_vertices
 from .model_keypoints import ScoremapComputer, compute_local_features
 from .gcn import generate_adj, GCN
-from .pointnet import PointNetfeat
-from .backbones.hmr import hmr
+from .pointnet import PointNetfeat, PointNetfeat_v
+from .backbones import hmr, SMPL
 
 
 
@@ -194,9 +194,10 @@ class Part(nn.Module):
         self.classifier6 = ClassBlock(neck, self.num_classes, 2176)
         # self.classifier6 = ClassBlock(neck, self.num_classes, 2304)
         self.classifier7 = ClassBlock(neck, self.num_classes, 1024)
-        # self.classifier8 = ClassBlock(neck, self.num_classes, 229)
+        self.classifier8 = ClassBlock(neck, self.num_classes, 2048)
 
         self.transformer = vit_TransReID()
+        self.transformer_v = vit_vertices()
 
         # self.linked_edges = \
         #     [[0, 1], [0, 2], [1, 3], [3, 5], [2, 4], [4, 6],  # body
@@ -254,8 +255,8 @@ class Part(nn.Module):
 
         self.l2norm = Normalize(2)
 
-    def forward(self, x):
-    # def forward(self, x, x2):
+    # def forward(self, x):
+    def forward(self, x, x2):
         # resnet50
         global_feat = self.base(x)
 
@@ -270,8 +271,8 @@ class Part(nn.Module):
         f = torch.stack(feature_vector_list, 1)
         # vit_feat = self.transformer(f)
 
-        pointfeat = PointNetfeat(global_feat=False)
-        k = pointfeat(keypoints_location.transpose(2, 1))
+        pointfeat_k = PointNetfeat(global_feat=False)
+        k = pointfeat_k(keypoints_location.transpose(2, 1))
         # # k = pointfeat(torch.cat((keypoints_location, keypoints_confidence.unsqueeze(2).cpu()), dim=2).transpose(2, 1))
         k = k.transpose(2, 1).cuda()
         # k = keypoints_location.cuda()
@@ -291,19 +292,35 @@ class Part(nn.Module):
         f = torch.cat((f, key_feat), dim=2)
         vit_feat = self.transformer(f)
 
+        # Load SMPL model
+        smpl = SMPL('/home/yhl/project/SPIN/data/smpl',
+                    batch_size=1,
+                    create_transl=False).to(self.device)
+        with torch.no_grad():
+            pred_rotmat, pred_betas, pred_camera = self.hmr(x2)
+            pred_output = smpl(betas=pred_betas, body_pose=pred_rotmat[:, 1:],
+                               global_orient=pred_rotmat[:, 0].unsqueeze(1), pose2rot=False)
+            pred_vertices = pred_output.vertices.cpu()
+            # pred_joints = pred_output.joints
 
-        # pred_rotmat, pred_betas, pred_camera = self.hmr(x2)
+        pointfeat_v = PointNetfeat_v(global_feat=False)
+        v = pointfeat_v(pred_vertices.transpose(2, 1))
+        v = v.transpose(2, 1).cuda()
+        vit_vfeat = self.transformer_v(v)
+
         # threeDF = torch.cat((pred_rotmat.view(pred_rotmat.size()[0], -1), pred_betas, pred_camera), 1)
         # vit_feat = torch.cat((vit_feat, pred_betas), 1)
         # bn4 = nn.BatchNorm1d(1024)
         # conv4 = torch.nn.Conv1d(10, 1024, 1)
         # threeDF = bn4(conv4(torch.unsqueeze(pred_betas, 2).cpu())).view(-1, 1024).cuda()
 
+
+
         if self.neck == 'bnneck':
             fb = self.bottleneck1(feature_vector_list[-1])
             vb = self.bottleneck2(vit_feat)
             kb = self.bottleneck3(key_global)
-            # db = self.bottleneck4(threeDF)
+            vertices = self.bottleneck4(vit_vfeat)
 
         if self.training:
             # score = self.classifier1(feats[4])
@@ -323,9 +340,9 @@ class Part(nn.Module):
             score[0] = self.classifier5(fb)
             score[1] = self.classifier6(vb)
             score[2] = self.classifier7(kb)
-            # score[3] = self.classifier8(db)
+            score[3] = self.classifier8(vertices)
 
-            return score, (feature_vector_list[-1], vit_feat, key_global)
+            return score, (feature_vector_list[-1], vit_feat, key_global, vit_vfeat)
             # return score, (feature_vector_list[-1], vit_feat, key_global, threeDF)
         else:
             if self.neck_feat == 'after':

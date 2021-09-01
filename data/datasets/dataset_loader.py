@@ -73,7 +73,7 @@ class ImageDatasetPart(Dataset):
         #     msk = torch.nn.functional.interpolate(msk, size=(256, 128), mode='bilinear', align_corners=True)
         # else:
         #     msk = torch.empty([0])
-        return img, pid, img2, clothid, camid, img_path
+        return img, pid, img2, clothid, camid
 
 
 def get_transform(center, scale, res, rot=0):

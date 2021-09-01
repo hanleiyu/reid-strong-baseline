@@ -142,7 +142,7 @@ def part_trainer_with_center(model, center_criterion1, center_criterion2, center
         ten = [torch.tensor(1.0).cuda() for _ in range(len(feat))]
         for i in range(len(feat)):
             if log_var is not None:
-                loss_part[i] = loss_fn(score[i], feat[i], target_c, log_var[i], i)
+                loss_part[i] = loss_fn(score[i], feat[i], target, log_var[i], i)
                 # if i == len(feat) - 1:
                 #     loss_part[i] = loss_fn(score[i], feat[i], target, log_var[i])[0]
                 # else:
@@ -153,7 +153,7 @@ def part_trainer_with_center(model, center_criterion1, center_criterion2, center
                 #     loss_part[i] = loss_fn(score[i], feat[i], target)[0]
                 # else:
                 #     loss_part[i] = loss_fn(score[i], feat[i], target)[1]
-            acc[i] = (score[i].max(1)[1] == target_c).float().mean()
+            acc[i] = (score[i].max(1)[1] == target).float().mean()
         torch.autograd.backward(loss_part, ten)
         optimizer.step()
         for param in center_criterion1.parameters():
