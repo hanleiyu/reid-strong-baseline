@@ -8,7 +8,6 @@ from .backbones.vit import vit_TransReID, vit_vertices
 from .model_keypoints import ScoremapComputer, compute_local_features
 from .gcn import generate_adj, GCN
 from .pointnet import PointNetfeat, PointNetfeat_v
-from .backbones import hmr, SMPL
 
 
 
@@ -256,7 +255,7 @@ class Part(nn.Module):
         self.l2norm = Normalize(2)
 
     # def forward(self, x):
-    def forward(self, x, x2):
+    def forward(self, x, pc):
         # resnet50
         global_feat = self.base(x)
 
@@ -292,19 +291,9 @@ class Part(nn.Module):
         f = torch.cat((f, key_feat), dim=2)
         vit_feat = self.transformer(f)
 
-        # Load SMPL model
-        smpl = SMPL('/home/yhl/project/SPIN/data/smpl',
-                    batch_size=1,
-                    create_transl=False).to(self.device)
-        with torch.no_grad():
-            pred_rotmat, pred_betas, pred_camera = self.hmr(x2)
-            pred_output = smpl(betas=pred_betas, body_pose=pred_rotmat[:, 1:],
-                               global_orient=pred_rotmat[:, 0].unsqueeze(1), pose2rot=False)
-            pred_vertices = pred_output.vertices.cpu()
-            # pred_joints = pred_output.joints
 
         pointfeat_v = PointNetfeat_v(global_feat=False)
-        v = pointfeat_v(pred_vertices.transpose(2, 1))
+        v = pointfeat_v(pc.transpose(2, 1))
         v = v.transpose(2, 1).cuda()
         vit_vfeat = self.transformer_v(v)
 

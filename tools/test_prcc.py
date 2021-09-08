@@ -85,10 +85,10 @@ def main():
     #     val_loader, num_query, val_set = make_data_loader_prcc(cfg, trial=i)
     #     r1[i], r5[i], r10[i], map[i] = prcc_inference(cfg, model, val_loader, num_query, val_set, index=i)
     # logger.info("map: {:.1%}, r1: {:.1%}, r5: {:.1%}, r10: {:.1%}".format(mean(map), mean(r1), mean(r5), mean(r10)))
-    for i in range(25, 35):
-        val_loader, num_query, val_set = make_data_loader_prcc(cfg, trial=i)
-        r1[i-25], r5[i-25], r10[i-25], map[i-25] = prcc_inference(cfg, model, val_loader, num_query, val_set, index=i)
-    logger.info("map: {:.1%}, r1: {:.1%}, r5: {:.1%}, r10: {:.1%}".format(mean(map), mean(r1), mean(r5), mean(r10)))
+    # for i in range(25, 35):
+    #     val_loader, num_query, val_set = make_data_loader_prcc(cfg, trial=i)
+    #     r1[i-25], r5[i-25], r10[i-25], map[i-25] = prcc_inference(cfg, model, val_loader, num_query, val_set, index=i)
+    # logger.info("map: {:.1%}, r1: {:.1%}, r5: {:.1%}, r10: {:.1%}".format(mean(map), mean(r1), mean(r5), mean(r10)))
 
 if __name__ == '__main__':
     main()

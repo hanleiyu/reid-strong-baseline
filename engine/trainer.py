@@ -108,7 +108,7 @@ def part_trainer_with_center(model, center_criterion1, center_criterion2, center
         optimizer_center1.zero_grad()
         optimizer_center2.zero_grad()
         optimizer_center3.zero_grad()
-        img, target, img2, _, _ = batch
+        img, target, _, _, pc = batch
         img = img.to(device) if torch.cuda.device_count() >= 1 else img
 
         # mask = mask.cuda()  # [64, 6, 256, 128]
@@ -133,9 +133,8 @@ def part_trainer_with_center(model, center_criterion1, center_criterion2, center
         # target_c = target_c.to(device)
         # score, feat = model(img_c)
 
-        img2 = img2.to(device) if torch.cuda.device_count() >= 1 else img2
         target = target.to(device) if torch.cuda.device_count() >= 1 else target
-        score, feat = model(img, img2)
+        score, feat = model(img, pc)
 
         loss_part = [0 for _ in range(len(feat))]
         acc = [0 for _ in range(len(feat))]
@@ -268,7 +267,6 @@ def part_evaluator(model, metrics, device=None):
     def _inference(engine, batch):
         model.eval()
         with torch.no_grad():
-            # data, img2, pids, camids = batch
             data, pids, camids = batch
             data = data.to(device) if torch.cuda.device_count() >= 1 else data
             feat = model(data)
