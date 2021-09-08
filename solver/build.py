@@ -51,5 +51,6 @@ def make_optimizer_with_center(cfg, model, center_criterion1, center_criterion2,
     optimizer_center1 = torch.optim.SGD(center_criterion1.parameters(), lr=cfg.SOLVER.CENTER_LR)
     optimizer_center2 = torch.optim.SGD(center_criterion2.parameters(), lr=cfg.SOLVER.CENTER_LR)
     optimizer_center3 = torch.optim.SGD(center_criterion3.parameters(), lr=cfg.SOLVER.CENTER_LR)
+    # optimizer_center4 = torch.optim.SGD(center_criterion4.parameters(), lr=cfg.SOLVER.CENTER_LR)
 
     return optimizer, optimizer_center1, optimizer_center2, optimizer_center3

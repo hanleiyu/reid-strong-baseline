@@ -253,7 +253,7 @@ def cal_mask(p, h, w, a, b=0):
     elif a == "face":
         with open(p, 'rb') as f:
             params = json.load(f)
-            params = params['people'][0]['pose_keypoints_2d']
+            # params = params['people'][0]['pose_keypoints_2d']
             if len(params) > 0:
                 t = math.floor(params[3*1 + 1])
                 c = params[3*1+2]
@@ -337,8 +337,7 @@ def save_kp():
     torch.save(maskq, osp.join(data_path, 'part4n/maskq.pt'))
 
 
-data_path = "/home/yhl/data/prcc/rgb"
-# save_kp()
+data_path = "/home/yhl/data/ltcc"
 
 
 
@@ -421,11 +420,12 @@ def crop(path):
 
 def cropnew(path):
     img_paths = glob.glob(os.path.join(data_path, path, "*.jpg"))
+    # img_paths = glob.glob(os.path.join(data_path, path, "0006-01-02-04.jpg"))
     for img in img_paths:
         image = cv2.imread(img)
         m = np.zeros((image.shape[0], image.shape[1]))
 
-        p = os.path.join(data_path, "kpo/val", img.split("/")[-1][:-4] + '_keypoints.json')
+        p = os.path.join(data_path, "kpo/", path, img.split("/")[-1][:-4] + '_keypoints.json')
         pt1, pt2, _ = get_json_data(p, 1, 8)
         pt3, pt4, _ = get_json_data(p, 2, 5)
         upmin = min(pt4[0], pt3[0])
@@ -471,9 +471,10 @@ def cropnew(path):
                     m[line[i][1]][line[i][0] - j] = 0
 
         image[m > 0] = 0
-        cv2.imwrite(os.path.join(data_path, path+"crop3", img.split("/")[-1]), image)
+        cv2.imwrite(os.path.join(data_path, path+ "crop", img.split("/")[-1]), image)
+        # cv2.imwrite(os.path.join(data_path, "2.jpg"), image)
 
-# cropnew("queryc")
+# cropnew("query")
 # cropnew("gallery")
 # cropnew("train")
 # cropnew("val")

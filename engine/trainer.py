@@ -13,7 +13,8 @@ from ignite.handlers import ModelCheckpoint, Timer
 from ignite.metrics import RunningAverage
 
 from utils.reid_metric import R1_mAP
-from numpy import *
+import numpy
+import copy
 
 global ITER
 ITER = 0
@@ -107,10 +108,35 @@ def part_trainer_with_center(model, center_criterion1, center_criterion2, center
         optimizer_center1.zero_grad()
         optimizer_center2.zero_grad()
         optimizer_center3.zero_grad()
-        img, target, _ = batch
+        img, target, img2, _, _ = batch
         img = img.to(device) if torch.cuda.device_count() >= 1 else img
+
+        # mask = mask.cuda()  # [64, 6, 256, 128]
+        # mask_i = mask.argmax(dim=1).unsqueeze(dim=1)  # [64, 1, 256, 128]
+        # mask_i = mask_i.expand_as(img)
+        # img_a = copy.deepcopy(img)
+        #
+        # # upper clothes sampling
+        # index = numpy.random.permutation(img.shape[0])
+        # img_r = img[index]  # [64, 3, 256, 128]
+        # msk_r = mask_i[index]  # [64, 6, 256, 128]
+        # img_a[mask_i == 2] = img_r[msk_r == 2]
+        #
+        # # pant sampling
+        # index = numpy.random.permutation(img.shape[0])
+        # img_r = img[index]  # [64, 3, 256, 128]
+        # msk_r = mask_i[index]  # [64, 6, 256, 128]
+        # img_a[mask_i == 3] = img_r[msk_r == 3]
+        #
+        # img_c = torch.cat([img, img_a], dim=0)
+        # target_c = torch.cat([target, target], dim=0)
+        # target_c = target_c.to(device)
+        # score, feat = model(img_c)
+
+        img2 = img2.to(device) if torch.cuda.device_count() >= 1 else img2
         target = target.to(device) if torch.cuda.device_count() >= 1 else target
-        score, feat = model(img)
+        score, feat = model(img, img2)
+
         loss_part = [0 for _ in range(len(feat))]
         acc = [0 for _ in range(len(feat))]
         ten = [torch.tensor(1.0).cuda() for _ in range(len(feat))]
@@ -242,8 +268,8 @@ def part_evaluator(model, metrics, device=None):
     def _inference(engine, batch):
         model.eval()
         with torch.no_grad():
+            # data, img2, pids, camids = batch
             data, pids, camids = batch
-            # data, pids, camids, masks = batch
             data = data.to(device) if torch.cuda.device_count() >= 1 else data
             feat = model(data)
             # feat = model(data, masks)
@@ -683,12 +709,14 @@ def do_train_with_center_part(
         center_criterion1,
         center_criterion2,
         center_criterion3,
+
         train_loader,
         val_loader,
         optimizer,
         optimizer_center1,
         optimizer_center2,
         optimizer_center3,
+
         scheduler,
         loss_fn,
         num_query,
@@ -717,6 +745,7 @@ def do_train_with_center_part(
                                                                      'center_param1': center_criterion1,
                                                                      'center_param2': center_criterion2,
                                                                      'center_param3': center_criterion3,
+
                                                                      'optimizer_center1': optimizer_center1,
                                                                      'optimizer_center2': optimizer_center2,
                                                                      'optimizer_center3': optimizer_center3})
@@ -755,7 +784,8 @@ def do_train_with_center_part(
 
         if ITER % log_period == 0:
             logger.info("Epoch[{}] Iteration[{}/{}] Loss: {:.3f}, Loss1: {:.3f}, Loss2: {:.3f},"
-                        "Acc: {:.3f}, Acc1: {:.3f}, Acc2: {:.3f}, Base Lr: {:.2e}, var: {:.3f}, var1: {:.3f}, var2: {:.3f}"
+                        "Acc: {:.3f}, Acc1: {:.3f}, Acc2: {:.3f}, Base Lr: {:.2e}, "
+                        "var: {:.3f}, var1: {:.3f}, var2: {:.3f}"
                         .format(engine.state.epoch, ITER, len(train_loader),
                                 engine.state.metrics['avg_loss1'], engine.state.metrics['avg_loss2'],
                                 engine.state.metrics['avg_loss3'],

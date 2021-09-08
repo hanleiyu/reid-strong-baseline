@@ -25,12 +25,14 @@ class R1_mAP(Metric):
     def reset(self):
         self.feats = []
         self.pids = []
+        self.clothids = []
         self.camids = []
 
     def update(self, output):
-        feat, pid, camid = output
+        feat, pid, clothid, camid = output
         self.feats.append(feat)
         self.pids.extend(np.asarray(pid))
+        self.clothids.extend(np.asarray(clothid))
         self.camids.extend(np.asarray(camid))
 
     def compute(self):
@@ -41,17 +43,19 @@ class R1_mAP(Metric):
         # query
         qf = feats[:self.num_query]
         q_pids = np.asarray(self.pids[:self.num_query])
+        q_clothids = np.asarray(self.clothids[:self.num_query])
         q_camids = np.asarray(self.camids[:self.num_query])
         # gallery
         gf = feats[self.num_query:]
         g_pids = np.asarray(self.pids[self.num_query:])
+        g_clothids = np.asarray(self.clothids[self.num_query:])
         g_camids = np.asarray(self.camids[self.num_query:])
         m, n = qf.shape[0], gf.shape[0]
         distmat = torch.pow(qf, 2).sum(dim=1, keepdim=True).expand(m, n) + \
                   torch.pow(gf, 2).sum(dim=1, keepdim=True).expand(n, m).t()
         distmat.addmm_(1, -2, qf, gf.t())
         distmat = distmat.cpu().numpy()
-        cmc, mAP = eval_func(distmat, q_pids, g_pids, q_camids, g_camids)
+        cmc, mAP = eval_func(distmat, q_pids, g_pids, q_clothids, g_clothids, q_camids, g_camids)
         # if self.index == 1: visualize_ranked_results(distmat, self.val_set.dataset, self.num_query,
         # save_dir='/home/yhl/log/pic', topk=5)
         return cmc, mAP

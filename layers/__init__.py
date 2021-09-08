@@ -6,7 +6,7 @@
 
 import torch.nn.functional as F
 
-from .triplet_loss import TripletLoss, TripletLossUncertainty, CrossEntropyLabelSmooth, CrossEntropyLabelSmoothUncertainty
+from .triplet_loss import TripletLoss, TripletLossUncertainty, CrossEntropyLabelSmooth, CrossEntropyLabelSmoothUncertainty, FeatLoss
 from .center_loss import CenterLoss
 import torch
 
@@ -74,6 +74,7 @@ def make_loss_with_center(cfg, num_classes):    # modified by gu
         center_criterion1 = CenterLoss(num_classes=num_classes, feat_dim=2048, use_gpu=True)  # center loss
         center_criterion2 = CenterLoss(num_classes=num_classes, feat_dim=2176, use_gpu=True)  # center loss
         center_criterion3 = CenterLoss(num_classes=num_classes, feat_dim=1024, use_gpu=True)  # center loss
+        center_criterion4 = CenterLoss(num_classes=num_classes, feat_dim=229, use_gpu=True)  # center loss
 
     else:
         print('expected METRIC_LOSS_TYPE with center should be center, triplet_center'
@@ -83,6 +84,8 @@ def make_loss_with_center(cfg, num_classes):    # modified by gu
         xent = CrossEntropyLabelSmooth(num_classes=num_classes)     # new add by luo
         print("label smooth on, numclasses:", num_classes)
 
+    feat_loss = FeatLoss()
+
     def loss_func(score, feat, target, log_var=None, i=0):
         if i == 0:
             center_criterion = center_criterion1
@@ -90,6 +93,8 @@ def make_loss_with_center(cfg, num_classes):    # modified by gu
             center_criterion = center_criterion2
         elif i == 2:
             center_criterion = center_criterion3
+        elif i == 3:
+            center_criterion = center_criterion4
 
         if cfg.MODEL.METRIC_LOSS_TYPE == 'center':
             if cfg.MODEL.IF_LABELSMOOTH == 'on':
@@ -108,7 +113,8 @@ def make_loss_with_center(cfg, num_classes):    # modified by gu
                 if cfg.MODEL.IF_UNCENTAINTY == 'on':
                     return torch.exp(-log_var).cuda() * \
                            (F.cross_entropy(score, target) + triplet(feat, target)[0] +
-                            cfg.SOLVER.CENTER_LOSS_WEIGHT * center_criterion(feat, target)) \
+                            cfg.SOLVER.CENTER_LOSS_WEIGHT * center_criterion(feat, target) +
+                            feat_loss(feat[0:64], feat[64:])) \
                            + log_var.cuda()
                 else:
                     return F.cross_entropy(score, target) + \
@@ -118,4 +124,6 @@ def make_loss_with_center(cfg, num_classes):    # modified by gu
         else:
             print('expected METRIC_LOSS_TYPE with center should be center, triplet_center'
                   'but got {}'.format(cfg.MODEL.METRIC_LOSS_TYPE))
+
     return loss_func, center_criterion1, center_criterion2, center_criterion3
+    # return loss_func, center_criterion1, center_criterion2, center_criterion3, center_criterion4
