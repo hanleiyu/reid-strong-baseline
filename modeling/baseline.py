@@ -6,9 +6,9 @@ from .backbones.resnet import ResNet, BasicBlock, Bottleneck
 from .backbones.resnet_ibn_a import resnet50_ibn_a
 from .backbones.vit import vit_TransReID, vit_vertices
 from .model_keypoints import ScoremapComputer, compute_local_features
-from .gcn import generate_adj, GCN
-from .pointnet import PointNetfeat, PointNetfeat_v
-
+from .backbones.gcn import generate_adj, GCN
+from .backbones.pointnet import PointNetfeat, PointNetfeat_v
+from .backbones.pointnet2_cls_msg import get_model, get_loss
 
 
 class Normalize(nn.Module):
@@ -227,12 +227,6 @@ class Part(nn.Module):
         self.scoremap_computer = ScoremapComputer(10)
         # self.scoremap_computer = nn.DataParallel(self.scoremap_computer).to(self.device)
         self.scoremap_computer = self.scoremap_computer.eval()
-
-        # 3D model
-        self.hmr = hmr('/home/yhl/.torch/models/smpl_mean_params.npz').to(self.device)
-        checkpoint = torch.load('/home/yhl/.torch/models/hmr.pt')
-        self.hmr.load_state_dict(checkpoint['model'], strict=False)
-        self.hmr = self.hmr.eval()
 
         self.bottleneck1 = nn.BatchNorm1d(self.in_planes)
         self.bottleneck1.bias.requires_grad_(False)  # no shift
