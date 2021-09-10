@@ -110,7 +110,7 @@ def make_data_loader_prcc(cfg, trial=0):
         pid = int(img_path.split("/")[-1][:3])
         clothid = 0
         camid = img_path.split("/")[-1][4]
-        gallery.append((img_path, pid, clothid, camid, ""))
+        gallery.append((img_path, pid, clothid, camid))
 
     # img_paths = glob.glob(osp.join('/home/yhl/data/prcc/rgb/test/queryccrop3', '*.jpg'))
     img_paths = glob.glob(osp.join('/home/yhl/data/prcc/rgb/test/C', '*.jpg'))
@@ -127,7 +127,7 @@ def make_data_loader_prcc(cfg, trial=0):
         pid = int(img_path.split("/")[-1][:3])
         clothid = 0
         camid = img_path.split("/")[-1][4]
-        query.append((img_path, pid, clothid, camid, ""))
+        query.append((img_path, pid, clothid, camid))
 
     val_set = ImageDatasetPart(query + gallery, transform=val_transforms)
 
