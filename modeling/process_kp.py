@@ -337,9 +337,6 @@ def save_kp():
     torch.save(maskq, osp.join(data_path, 'part4n/maskq.pt'))
 
 
-data_path = "/home/yhl/data/ltcc"
-
-
 
 # resize_kp(128, 256, "train")
 # resize_kp(8, 16, "val")
@@ -494,3 +491,19 @@ def cropnew(path):
 #     w += pic.size[0]
 #     n += 1
 # print(h/n, w/n)
+
+from modeling.backbones.pointnet2_utils import farthest_point_sample, index_points
+data_path = "/home/yhl/data/prcc/rgb"
+
+
+def sample_pointcloud(path):
+    pc_paths = glob.glob(os.path.join(data_path, path, "*.npy"))
+    for pc_path in pc_paths:
+        pc = torch.from_numpy(np.load(pc_path))
+        pc = pc.unsqueeze(dim=0)
+        pc = index_points(pc, farthest_point_sample(pc, 1024))
+        pc = pc.squeeze().cpu().numpy()
+        np.save(os.path.join(data_path, path + '1024', pc_path.split("/")[-1]), pc)
+
+sample_pointcloud("gallery3D")
+sample_pointcloud("train3D")

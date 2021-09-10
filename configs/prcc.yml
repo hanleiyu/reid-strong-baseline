@@ -1,9 +1,9 @@
 MODEL:
   PRETRAIN_CHOICE: 'imagenet'
   PRETRAIN_PATH: '/home/yhl/.torch/models/resnet50-19c8e357.pth'
-  METRIC_LOSS_TYPE: 'triplet'
+  METRIC_LOSS_TYPE: 'triplet_center'
   IF_LABELSMOOTH: 'off'
-  IF_WITH_CENTER: 'no'
+  IF_WITH_CENTER: 'yes'
   IF_UNCENTAINTY: 'on'
 
 INPUT:
@@ -19,7 +19,7 @@ DATASETS:
 DATALOADER:
   SAMPLER: 'softmax_triplet'
   NUM_INSTANCE: 4
-  NUM_WORKERS: 8
+  NUM_WORKERS: 16
 
 SOLVER:
   OPTIMIZER_NAME: 'Adam'
@@ -40,7 +40,7 @@ SOLVER:
   BIAS_LR_FACTOR: 1
   WEIGHT_DECAY: 0.0005
   WEIGHT_DECAY_BIAS: 0.0005
-  IMS_PER_BATCH: 32
+  IMS_PER_BATCH: 64
 
   STEPS: [40, 70]
   GAMMA: 0.1
@@ -51,11 +51,11 @@ SOLVER:
 
   CHECKPOINT_PERIOD: 20
   LOG_PERIOD: 20
-  EVAL_PERIOD: 140
+  EVAL_PERIOD: 10
 
 TEST:
   IMS_PER_BATCH: 128
-  RE_RANKING: 'yes'
+  RE_RANKING: 'no'
   WEIGHT: "path"
   NECK_FEAT: 'after'
   FEAT_NORM: 'no'

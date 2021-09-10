@@ -11,6 +11,7 @@ import numpy as np
 import scipy.misc
 import torch
 
+
 def read_image(img_path):
     """Keep reading image until succeed.
     This can avoid IOError incurred by heavy IO process."""
@@ -61,7 +62,14 @@ class ImageDatasetPart(Dataset):
     def __getitem__(self, index):
         img_path, pid, clothid, camid = self.dataset[index]
         img = read_image(img_path)
-        pointcloud = np.load(img_path.split("/")[:-1]+'3D/'+img_path.split("/")[-1][:-4]+'.npy')
+        if img_path.split("/")[-2] == 'train':
+            path = "train3D1024/"
+        elif img_path.split("/")[-2] == 'C':
+            path = "query3D1024/"
+        elif img_path.split("/")[-2] == 'A':
+            path = 'gallery3D1024/'
+        pointcloud = torch.from_numpy(np.load("/home/yhl/data/prcc/rgb/" + path +
+                             img_path.split("/")[-1][:-4] + '.npy'))
         if self.transform is not None:
             img = self.transform(img)
 
@@ -71,6 +79,5 @@ class ImageDatasetPart(Dataset):
         #     msk = torch.nn.functional.interpolate(msk, size=(256, 128), mode='bilinear', align_corners=True)
         # else:
         #     msk = torch.empty([0])
-        return img, pid, clothid, camid, pointcloud.cuda()
-
+        return img, pid, clothid, camid, pointcloud
 

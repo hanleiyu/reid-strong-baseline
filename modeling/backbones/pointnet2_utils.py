@@ -247,7 +247,7 @@ class PointNetSetAbstractionMsg(nn.Module):
                 grouped_points = index_points(points, group_idx)
                 grouped_points = torch.cat([grouped_points, grouped_xyz], dim=-1)
             else:
-                grouped_points = grouped_xyz
+                grouped_points = grouped_xyz.cuda()
 
             grouped_points = grouped_points.permute(0, 3, 2, 1)  # [B, D, K, S]
             for j in range(len(self.conv_blocks[i])):

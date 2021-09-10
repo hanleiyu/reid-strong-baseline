@@ -4,11 +4,12 @@ from torch import nn
 
 from .backbones.resnet import ResNet, BasicBlock, Bottleneck
 from .backbones.resnet_ibn_a import resnet50_ibn_a
-from .backbones.vit import vit_TransReID, vit_vertices
+from .backbones.vit import vit_TransReID
 from .model_keypoints import ScoremapComputer, compute_local_features
 from .backbones.gcn import generate_adj, GCN
 from .backbones.pointnet import PointNetfeat, PointNetfeat_v
 from .backbones.pointnet2_cls_msg import get_model, get_loss
+import utils.provider as provider
 
 
 class Normalize(nn.Module):
@@ -193,10 +194,9 @@ class Part(nn.Module):
         self.classifier6 = ClassBlock(neck, self.num_classes, 2176)
         # self.classifier6 = ClassBlock(neck, self.num_classes, 2304)
         self.classifier7 = ClassBlock(neck, self.num_classes, 1024)
-        self.classifier8 = ClassBlock(neck, self.num_classes, 2048)
+        self.classifier8 = ClassBlock(neck, self.num_classes, 1024)
 
         self.transformer = vit_TransReID()
-        self.transformer_v = vit_vertices()
 
         # self.linked_edges = \
         #     [[0, 1], [0, 2], [1, 3], [3, 5], [2, 4], [4, 6],  # body
@@ -242,11 +242,14 @@ class Part(nn.Module):
         self.bottleneck3.bias.requires_grad_(False)  # no shift
         self.bottleneck3.apply(weights_init_kaiming)
 
-        # self.bottleneck4 = nn.BatchNorm1d(229)
-        # self.bottleneck4.bias.requires_grad_(False)  # no shift
-        # self.bottleneck4.apply(weights_init_kaiming)
+        self.bottleneck4 = nn.BatchNorm1d(1024)
+        self.bottleneck4.bias.requires_grad_(False)  # no shift
+        self.bottleneck4.apply(weights_init_kaiming)
+
+        self.threeD = get_model(False)
 
         self.l2norm = Normalize(2)
+
 
     # def forward(self, x):
     def forward(self, x, pc):
@@ -286,10 +289,20 @@ class Part(nn.Module):
         vit_feat = self.transformer(f)
 
 
-        pointfeat_v = PointNetfeat_v(global_feat=False)
-        v = pointfeat_v(pc.transpose(2, 1))
-        v = v.transpose(2, 1).cuda()
-        vit_vfeat = self.transformer_v(v)
+        # pointfeat_v = PointNetfeat_v(global_feat=False)
+        # v = pointfeat_v(pc.transpose(2, 1))
+        # v = v.transpose(2, 1).cuda()
+        # vit_vfeat = self.transformer_v(v)
+
+        #3D pose & shape feature
+        self.threeD = self.threeD.train()
+        pc = pc.cpu().numpy()
+        pc = provider.random_point_dropout(pc)
+        pc[:, :, 0:3] = provider.random_scale_point_cloud(pc[:, :, 0:3])
+        pc[:, :, 0:3] = provider.shift_point_cloud(pc[:, :, 0:3])
+        pc = torch.from_numpy(pc)
+        pc = pc.transpose(2, 1)
+        _, feat3D = self.threeD(pc)
 
         # threeDF = torch.cat((pred_rotmat.view(pred_rotmat.size()[0], -1), pred_betas, pred_camera), 1)
         # vit_feat = torch.cat((vit_feat, pred_betas), 1)
@@ -303,7 +316,7 @@ class Part(nn.Module):
             fb = self.bottleneck1(feature_vector_list[-1])
             vb = self.bottleneck2(vit_feat)
             kb = self.bottleneck3(key_global)
-            vertices = self.bottleneck4(vit_vfeat)
+            vertices = self.bottleneck4(feat3D)
 
         if self.training:
             # score = self.classifier1(feats[4])
@@ -316,7 +329,7 @@ class Part(nn.Module):
             # score[5] = self.classifier6(feats[5])
             # return score, feats
 
-            score = [torch.zeros(128) for _ in range(3)]
+            score = [torch.zeros(128) for _ in range(4)]
             # score[0] = self.classifier5(feature_vector_list[-1])
             # score[1] = self.classifier6(vit_feat)
             # score[2] = self.classifier7(key_global)
@@ -325,7 +338,7 @@ class Part(nn.Module):
             score[2] = self.classifier7(kb)
             score[3] = self.classifier8(vertices)
 
-            return score, (feature_vector_list[-1], vit_feat, key_global, vit_vfeat)
+            return score, (feature_vector_list[-1], vit_feat, key_global, feat3D)
             # return score, (feature_vector_list[-1], vit_feat, key_global, threeDF)
         else:
             if self.neck_feat == 'after':

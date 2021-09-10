@@ -66,10 +66,10 @@ def part_trainer(model, optimizer, loss_fn, log_var=None, device=None):
     def _update(engine, batch):
         model.train()
         optimizer.zero_grad()
-        img, target, _ = batch
+        img, target, _, _, pc = batch
         img = img.to(device) if torch.cuda.device_count() >= 1 else img
         target = target.to(device) if torch.cuda.device_count() >= 1 else target
-        score, feat = model(img)
+        score, feat = model(img, pc)
         loss_part = [0 for _ in range(len(feat))]
         acc = [0 for _ in range(len(feat))]
         ten = [torch.tensor(1.0).cuda() for _ in range(len(feat))]
@@ -94,8 +94,9 @@ def part_trainer(model, optimizer, loss_fn, log_var=None, device=None):
     return Engine(_update)
 
 
-def part_trainer_with_center(model, center_criterion1, center_criterion2, center_criterion3, optimizer,
-                             optimizer_center1, optimizer_center2, optimizer_center3,
+def part_trainer_with_center(model, center_criterion1, center_criterion2, center_criterion3, center_criterion4,
+                             optimizer,
+                             optimizer_center1, optimizer_center2, optimizer_center3, optimizer_center4,
                              loss_fn, cetner_loss_weight, device=None, log_var=None):
     if device:
         if torch.cuda.device_count() > 1:
@@ -108,31 +109,9 @@ def part_trainer_with_center(model, center_criterion1, center_criterion2, center
         optimizer_center1.zero_grad()
         optimizer_center2.zero_grad()
         optimizer_center3.zero_grad()
+        optimizer_center4.zero_grad()
         img, target, _, _, pc = batch
         img = img.to(device) if torch.cuda.device_count() >= 1 else img
-
-        # mask = mask.cuda()  # [64, 6, 256, 128]
-        # mask_i = mask.argmax(dim=1).unsqueeze(dim=1)  # [64, 1, 256, 128]
-        # mask_i = mask_i.expand_as(img)
-        # img_a = copy.deepcopy(img)
-        #
-        # # upper clothes sampling
-        # index = numpy.random.permutation(img.shape[0])
-        # img_r = img[index]  # [64, 3, 256, 128]
-        # msk_r = mask_i[index]  # [64, 6, 256, 128]
-        # img_a[mask_i == 2] = img_r[msk_r == 2]
-        #
-        # # pant sampling
-        # index = numpy.random.permutation(img.shape[0])
-        # img_r = img[index]  # [64, 3, 256, 128]
-        # msk_r = mask_i[index]  # [64, 6, 256, 128]
-        # img_a[mask_i == 3] = img_r[msk_r == 3]
-        #
-        # img_c = torch.cat([img, img_a], dim=0)
-        # target_c = torch.cat([target, target], dim=0)
-        # target_c = target_c.to(device)
-        # score, feat = model(img_c)
-
         target = target.to(device) if torch.cuda.device_count() >= 1 else target
         score, feat = model(img, pc)
 
@@ -162,6 +141,8 @@ def part_trainer_with_center(model, center_criterion1, center_criterion2, center
             param.grad.data *= (1. / cetner_loss_weight)
         optimizer_center2.step()
         for param in center_criterion3.parameters():
+            param.grad.data *= (1. / cetner_loss_weight)
+        for param in center_criterion4.parameters():
             param.grad.data *= (1. / cetner_loss_weight)
         optimizer_center3.step()
         return loss_part, acc
@@ -267,11 +248,11 @@ def part_evaluator(model, metrics, device=None):
     def _inference(engine, batch):
         model.eval()
         with torch.no_grad():
-            data, pids, camids = batch
+            data, pids, clothids, camids, pc = batch
             data = data.to(device) if torch.cuda.device_count() >= 1 else data
-            feat = model(data)
-            # feat = model(data, masks)
-            return feat, pids, camids
+            # feat = model(data)
+            feat = model(data, pc)
+            return feat, pids, clothids, camids
 
     engine = Engine(_inference)
 
@@ -707,14 +688,14 @@ def do_train_with_center_part(
         center_criterion1,
         center_criterion2,
         center_criterion3,
-
+        center_criterion4,
         train_loader,
         val_loader,
         optimizer,
         optimizer_center1,
         optimizer_center2,
         optimizer_center3,
-
+        optimizer_center4,
         scheduler,
         loss_fn,
         num_query,
@@ -730,9 +711,9 @@ def do_train_with_center_part(
 
     logger = logging.getLogger("reid_baseline.train")
     logger.info("Start training")
-    trainer = part_trainer_with_center(model, center_criterion1, center_criterion2, center_criterion3,
-                                       optimizer, optimizer_center1, optimizer_center2, optimizer_center3, loss_fn,
-                                                    cfg.SOLVER.CENTER_LOSS_WEIGHT, device=device, log_var=log_var)
+    trainer = part_trainer_with_center(model, center_criterion1, center_criterion2, center_criterion3, center_criterion4,
+                                       optimizer, optimizer_center1, optimizer_center2, optimizer_center3, optimizer_center4,
+                                       loss_fn, cfg.SOLVER.CENTER_LOSS_WEIGHT, device=device, log_var=log_var)
     evaluator = part_evaluator(model, metrics={
         'r1_mAP': R1_mAP(num_query, max_rank=50, feat_norm=cfg.TEST.FEAT_NORM)}, device=device)
     checkpointer = ModelCheckpoint(output_dir, cfg.MODEL.NAME, checkpoint_period, n_saved=10, require_empty=False)
@@ -743,10 +724,11 @@ def do_train_with_center_part(
                                                                      'center_param1': center_criterion1,
                                                                      'center_param2': center_criterion2,
                                                                      'center_param3': center_criterion3,
-
+                                                                     'center_param4': center_criterion4,
                                                                      'optimizer_center1': optimizer_center1,
                                                                      'optimizer_center2': optimizer_center2,
-                                                                     'optimizer_center3': optimizer_center3})
+                                                                     'optimizer_center3': optimizer_center3,
+                                                                     'optimizer_center4': optimizer_center4})
 
     timer.attach(trainer, start=Events.EPOCH_STARTED, resume=Events.ITERATION_STARTED,
                  pause=Events.ITERATION_COMPLETED, step=Events.ITERATION_COMPLETED)
@@ -755,14 +737,14 @@ def do_train_with_center_part(
     RunningAverage(output_transform=lambda x: x[0][0]).attach(trainer, 'avg_loss1')
     RunningAverage(output_transform=lambda x: x[0][1]).attach(trainer, 'avg_loss2')
     RunningAverage(output_transform=lambda x: x[0][2]).attach(trainer, 'avg_loss3')
-    # RunningAverage(output_transform=lambda x: x[0][3]).attach(trainer, 'avg_loss4')
+    RunningAverage(output_transform=lambda x: x[0][3]).attach(trainer, 'avg_loss4')
     # RunningAverage(output_transform=lambda x: x[0][4]).attach(trainer, 'avg_loss5')
     # RunningAverage(output_transform=lambda x: x[0][5]).attach(trainer, 'avg_loss6')
     # # RunningAverage(output_transform=lambda x: x[0][6]).attach(trainer, 'avg_loss7')
     RunningAverage(output_transform=lambda x: x[1][0]).attach(trainer, 'avg_acc1')
     RunningAverage(output_transform=lambda x: x[1][1]).attach(trainer, 'avg_acc2')
     RunningAverage(output_transform=lambda x: x[1][2]).attach(trainer, 'avg_acc3')
-    # RunningAverage(output_transform=lambda x: x[1][3]).attach(trainer, 'avg_acc4')
+    RunningAverage(output_transform=lambda x: x[1][3]).attach(trainer, 'avg_acc4')
     # RunningAverage(output_transform=lambda x: x[1][4]).attach(trainer, 'avg_acc5')
     # RunningAverage(output_transform=lambda x: x[1][5]).attach(trainer, 'avg_acc6')
     # # RunningAverage(output_transform=lambda x: x[1][6]).attach(trainer, 'avg_acc7')
@@ -781,15 +763,15 @@ def do_train_with_center_part(
         ITER += 1
 
         if ITER % log_period == 0:
-            logger.info("Epoch[{}] Iteration[{}/{}] Loss: {:.3f}, Loss1: {:.3f}, Loss2: {:.3f},"
-                        "Acc: {:.3f}, Acc1: {:.3f}, Acc2: {:.3f}, Base Lr: {:.2e}, "
-                        "var: {:.3f}, var1: {:.3f}, var2: {:.3f}"
+            logger.info("Epoch[{}] Iteration[{}/{}] Loss: {:.3f}, Loss1: {:.3f}, Loss2: {:.3f}, Loss3: {:.3f},"
+                        "Acc: {:.3f}, Acc1: {:.3f}, Acc2: {:.3f}, Acc3: {:.3f}, Base Lr: {:.2e}, "
+                        "var: {:.3f}, var1: {:.3f}, var2: {:.3f},  var3: {:.3f}"
                         .format(engine.state.epoch, ITER, len(train_loader),
                                 engine.state.metrics['avg_loss1'], engine.state.metrics['avg_loss2'],
-                                engine.state.metrics['avg_loss3'],
+                                engine.state.metrics['avg_loss3'], engine.state.metrics['avg_loss4'],
                                 engine.state.metrics['avg_acc1'], engine.state.metrics['avg_acc2'],
-                                engine.state.metrics['avg_acc3'],
-                                scheduler.get_lr()[0], log_var[0], log_var[1], log_var[2]))
+                                engine.state.metrics['avg_acc3'], engine.state.metrics['avg_acc4'],
+                                scheduler.get_lr()[0], log_var[0], log_var[1], log_var[2], log_var[3]))
         if len(train_loader) == ITER:
             ITER = 0
 

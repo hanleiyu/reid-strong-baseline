@@ -23,5 +23,5 @@ def part_train_collate_fn(batch):
 
 
 def part_val_collate_fn(batch):
-    imgs, pids, clothids, camids, _ = zip(*batch)
-    return torch.stack(imgs, dim=0), pids, clothids, camids
+    imgs, pids, clothids, camids, pc = zip(*batch)
+    return torch.stack(imgs, dim=0), pids, clothids, camids, torch.stack(pc, dim=0)
