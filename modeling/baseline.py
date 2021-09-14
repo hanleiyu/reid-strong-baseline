@@ -344,9 +344,9 @@ class Part(nn.Module):
             if self.neck_feat == 'after':
                 # return feature_vector_list[-1]
                 # return self.l2norm(threeDF)
-                return self.l2norm(fb)
-                # return torch.cat((fb, threeDF), 1)
-                # return self.l2norm(torch.cat((fb, vb), 1))
+                # return self.l2norm(fb)
+                # return self.l2norm(torch.cat((fb, vertices), 1))
+                return self.l2norm(torch.cat((fb, vb), 1))
                 # return self.l2norm(torch.cat((fb, db), 1))
                 # return self.l2norm(torch.cat((fb, vb, db), 1))
             else:

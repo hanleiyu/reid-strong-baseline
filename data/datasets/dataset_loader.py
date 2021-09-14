@@ -63,11 +63,14 @@ class ImageDatasetPart(Dataset):
         img_path, pid, clothid, camid = self.dataset[index]
         img = read_image(img_path)
         if img_path.split("/")[-2] == 'train':
-            path = "train3D1024/"
+            # path = "train3D1024/"
+            path = "train3S/"
         elif img_path.split("/")[-2] == 'C':
-            path = "query3D1024/"
+            # path = "query3D1024/"
+            path = "query3S/"
         elif img_path.split("/")[-2] == 'A':
-            path = 'gallery3D1024/'
+            # path = 'gallery3D1024/'
+            path = 'gallery3S/'
         pointcloud = torch.from_numpy(np.load("/home/yhl/data/prcc/rgb/" + path +
                              img_path.split("/")[-1][:-4] + '.npy'))
         if self.transform is not None:
