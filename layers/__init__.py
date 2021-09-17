@@ -74,7 +74,7 @@ def make_loss_with_center(cfg, num_classes):    # modified by gu
         center_criterion1 = CenterLoss(num_classes=num_classes, feat_dim=2048, use_gpu=True)  # center loss
         center_criterion2 = CenterLoss(num_classes=num_classes, feat_dim=2176, use_gpu=True)  # center loss
         center_criterion3 = CenterLoss(num_classes=num_classes, feat_dim=1024, use_gpu=True)  # center loss
-        center_criterion4 = CenterLoss(num_classes=num_classes, feat_dim=1024, use_gpu=True)  # center loss
+        # center_criterion4 = CenterLoss(num_classes=num_classes, feat_dim=1024, use_gpu=True)  # center loss
 
     else:
         print('expected METRIC_LOSS_TYPE with center should be center, triplet_center'
@@ -93,8 +93,8 @@ def make_loss_with_center(cfg, num_classes):    # modified by gu
             center_criterion = center_criterion2
         elif i == 2:
             center_criterion = center_criterion3
-        elif i == 3:
-            center_criterion = center_criterion4
+        # elif i == 3:
+        #     center_criterion = center_criterion4
 
         if cfg.MODEL.METRIC_LOSS_TYPE == 'center':
             if cfg.MODEL.IF_LABELSMOOTH == 'on':
@@ -124,5 +124,5 @@ def make_loss_with_center(cfg, num_classes):    # modified by gu
             print('expected METRIC_LOSS_TYPE with center should be center, triplet_center'
                   'but got {}'.format(cfg.MODEL.METRIC_LOSS_TYPE))
 
-    # return loss_func, center_criterion1, center_criterion2, center_criterion3
-    return loss_func, center_criterion1, center_criterion2, center_criterion3, center_criterion4
+    return loss_func, center_criterion1, center_criterion2, center_criterion3
+    # return loss_func, center_criterion1, center_criterion2, center_criterion3, center_criterion4

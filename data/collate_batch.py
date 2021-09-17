@@ -19,9 +19,9 @@ def part_train_collate_fn(batch):
     pids = torch.tensor(pids, dtype=torch.int64)
     clothids = torch.tensor(clothids, dtype=torch.int64)
     # camids = torch.tensor(camids, dtype=torch.int64)
-    return torch.stack(imgs, dim=0), pids, clothids, camids, torch.stack(pc, dim=0)
+    return torch.stack(imgs, dim=0), pids, clothids, camids, pc
 
 
 def part_val_collate_fn(batch):
     imgs, pids, clothids, camids, pc = zip(*batch)
-    return torch.stack(imgs, dim=0), pids, clothids, camids, torch.stack(pc, dim=0)
+    return torch.stack(imgs, dim=0), pids, clothids, camids, pc

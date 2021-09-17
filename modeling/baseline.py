@@ -295,14 +295,14 @@ class Part(nn.Module):
         # vit_vfeat = self.transformer_v(v)
 
         #3D pose & shape feature
-        self.threeD = self.threeD.train()
-        pc = pc.cpu().numpy()
-        pc = provider.random_point_dropout(pc)
-        pc[:, :, 0:3] = provider.random_scale_point_cloud(pc[:, :, 0:3])
-        pc[:, :, 0:3] = provider.shift_point_cloud(pc[:, :, 0:3])
-        pc = torch.from_numpy(pc)
-        pc = pc.transpose(2, 1)
-        _, feat3D = self.threeD(pc)
+        # self.threeD = self.threeD.train()
+        # pc = pc.cpu().numpy()
+        # pc = provider.random_point_dropout(pc)
+        # pc[:, :, 0:3] = provider.random_scale_point_cloud(pc[:, :, 0:3])
+        # pc[:, :, 0:3] = provider.shift_point_cloud(pc[:, :, 0:3])
+        # pc = torch.from_numpy(pc)
+        # pc = pc.transpose(2, 1)
+        # _, feat3D = self.threeD(pc)
 
         # threeDF = torch.cat((pred_rotmat.view(pred_rotmat.size()[0], -1), pred_betas, pred_camera), 1)
         # vit_feat = torch.cat((vit_feat, pred_betas), 1)
@@ -316,7 +316,7 @@ class Part(nn.Module):
             fb = self.bottleneck1(feature_vector_list[-1])
             vb = self.bottleneck2(vit_feat)
             kb = self.bottleneck3(key_global)
-            vertices = self.bottleneck4(feat3D)
+            # vertices = self.bottleneck4(feat3D)
 
         if self.training:
             # score = self.classifier1(feats[4])
@@ -329,16 +329,17 @@ class Part(nn.Module):
             # score[5] = self.classifier6(feats[5])
             # return score, feats
 
-            score = [torch.zeros(128) for _ in range(4)]
+            score = [torch.zeros(128) for _ in range(3)]
             # score[0] = self.classifier5(feature_vector_list[-1])
             # score[1] = self.classifier6(vit_feat)
             # score[2] = self.classifier7(key_global)
             score[0] = self.classifier5(fb)
             score[1] = self.classifier6(vb)
             score[2] = self.classifier7(kb)
-            score[3] = self.classifier8(vertices)
+            # score[3] = self.classifier8(vertices)
 
-            return score, (feature_vector_list[-1], vit_feat, key_global, feat3D)
+            return score, (feature_vector_list[-1], vit_feat, key_global)
+            # return score, (feature_vector_list[-1], vit_feat, key_global, feat3D)
             # return score, (feature_vector_list[-1], vit_feat, key_global, threeDF)
         else:
             if self.neck_feat == 'after':
