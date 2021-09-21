@@ -39,13 +39,35 @@ class ImageDataset(Dataset):
         return len(self.dataset)
 
     def __getitem__(self, index):
-        img_path, pid, camid = self.dataset[index]
+        img_path, pid, _, camid = self.dataset[index]
         img = read_image(img_path)
 
         if self.transform is not None:
             img = self.transform(img)
 
         return img, pid, camid, img_path
+
+
+class ImageDatasetMMT(Dataset):
+    """Image Person ReID Dataset"""
+
+    def __init__(self, dataset, transform=None):
+        self.dataset = dataset
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.dataset)
+
+    def __getitem__(self, index):
+        img_path, pid, _, camid = self.dataset[index]
+        img = read_image(img_path)
+        img2 = read_image(img_path.replace('train', 'train2D'))
+
+        if self.transform is not None:
+            img = self.transform(img)
+            img2 = self.transform(img2)
+
+        return img, img2, pid, camid, img_path
 
 
 class ImageDatasetPart(Dataset):

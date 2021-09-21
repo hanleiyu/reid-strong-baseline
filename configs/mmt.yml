@@ -5,6 +5,8 @@ MODEL:
   IF_LABELSMOOTH: 'off'
   IF_WITH_CENTER: 'no'
   IF_UNCENTAINTY: 'off'
+  init_1: ''
+  init_2: ''
 
 INPUT:
   SIZE_TRAIN: [256, 128]

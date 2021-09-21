@@ -363,3 +363,39 @@ class Part(nn.Module):
             if 'classifier' in i:
                 continue
             self.state_dict()[i].copy_(param_dict[i])
+
+
+class MMT(nn.Module):
+    in_planes = 2048
+
+    def __init__(self, cfg, num_classes):
+        super(MMT, self).__init__()
+
+    def forward(self, x):
+        global_feat = self.gap(self.base(x))  # (b, 2048, 1, 1)
+
+        global_feat = global_feat.view(global_feat.shape[0], -1)  # flatten to (bs, 2048)
+
+        if self.neck == 'no':
+            feat = global_feat
+        elif self.neck == 'bnneck':
+            feat = self.bottleneck(global_feat)  # normalize for angular softmax
+
+        if self.training:
+            cls_score = self.classifier(feat)
+            return cls_score, global_feat  # global feature for triplet loss
+        else:
+            if self.neck_feat == 'after':
+                # print("Test with feature after BN")
+                return self.l2norm(feat)
+            else:
+                # print("Test with feature before BN")
+                return self.l2norm(global_feat)
+
+    def load_param(self, trained_path):
+        param_dict = torch.load(trained_path).state_dict()
+        for i in param_dict:
+            if 'classifier' in i:
+                continue
+            self.state_dict()[i].copy_(param_dict[i])
+

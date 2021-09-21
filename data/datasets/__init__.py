@@ -8,7 +8,7 @@ from .dukemtmcreid import DukeMTMCreID
 from .market1501 import Market1501
 from .msmt17 import MSMT17
 from .veri import VeRi
-from .dataset_loader import ImageDataset, ImageDatasetPart
+from .dataset_loader import ImageDataset, ImageDatasetPart, ImageDatasetMMT
 from .vc import VC
 from .prcc import PRCC
 from .ltcc import LTCC

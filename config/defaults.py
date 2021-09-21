@@ -45,6 +45,9 @@ _C.MODEL.IF_LABELSMOOTH = 'on'
 
 _C.MODEL.IF_UNCENTAINTY = 'off'
 
+_C.MODEL.init_1 = ""
+
+_C.MODEL.init_2 = ""
 # -----------------------------------------------------------------------------
 # INPUT
 # -----------------------------------------------------------------------------
@@ -160,3 +163,4 @@ _C.TEST.FEAT_NORM = 'yes'
 # ---------------------------------------------------------------------------- #
 # Path to checkpoint and saved log of trained model
 _C.OUTPUT_DIR = ""
+
