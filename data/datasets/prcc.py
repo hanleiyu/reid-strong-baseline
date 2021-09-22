@@ -25,8 +25,8 @@ class PRCC(BaseImageDataset):
         # self.train_dir = osp.join(self.dataset_dir, 'tvcrop3')
         # print("dataset is tvcrop3")
 
-        self.query_dir = osp.join(self.dataset_dir, 'query2D')
-        self.gallery_dir = osp.join(self.dataset_dir, 'gallery2D')
+        self.query_dir = osp.join(self.dataset_dir, 'test', 'C')
+        self.gallery_dir = osp.join(self.dataset_dir, 'test', 'A')
 
         self._check_before_run()
 

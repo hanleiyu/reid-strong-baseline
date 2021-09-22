@@ -137,8 +137,8 @@ def make_data_loader_prcc(cfg, trial=0):
     # img_paths = glob.glob(osp.join('/home/yhl/data/prcc/rgb/test/gallerycrop3', '*.jpg'))
     for id in ids:
         # img = glob.glob(osp.join('/home/yhl/data/prcc/rgb/test/gallerycrop3', id + '*.jpg'))
-        img = glob.glob(osp.join('/home/yhl/data/prcc/rgb/gallery2D', id + '*.jpg'))
-        # img = glob.glob(osp.join('/home/yhl/data/prcc/rgb/test/A', id + '*.jpg'))
+        # img = glob.glob(osp.join('/home/yhl/data/prcc/rgb/gallery2D', id + '*.jpg'))
+        img = glob.glob(osp.join('/home/yhl/data/prcc/rgb/test/A', id + '*.jpg'))
         img.sort()
         img_paths.append(random.choice(img))
 
@@ -150,8 +150,8 @@ def make_data_loader_prcc(cfg, trial=0):
         gallery.append((img_path, pid, clothid, camid))
 
     # img_paths = glob.glob(osp.join('/home/yhl/data/prcc/rgb/test/queryccrop3', '*.jpg'))
-    img_paths = glob.glob(osp.join('/home/yhl/data/prcc/rgb/query2D', '*.jpg'))
-    # img_paths = glob.glob(osp.join('/home/yhl/data/prcc/rgb/test/C', '*.jpg'))
+    # img_paths = glob.glob(osp.join('/home/yhl/data/prcc/rgb/query2D', '*.jpg'))
+    img_paths = glob.glob(osp.join('/home/yhl/data/prcc/rgb/test/C', '*.jpg'))
     # img_paths = glob.glob(osp.join('/home/yhl/data/prcc/rgb/queryb', '*.jpg'))
     pid_container = set()
 
