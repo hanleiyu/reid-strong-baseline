@@ -5,6 +5,7 @@
 """
 import torch
 from torch import nn
+import torch.nn.functional as F
 
 
 def normalize(x, axis=-1):
@@ -115,6 +116,43 @@ class TripletLoss(object):
             loss = self.ranking_loss(dist_an - dist_ap, y)
         return loss, dist_ap, dist_an
 
+
+class SoftTripletLoss(object):
+
+    def __init__(self, margin=None, normalize_feature=False):
+        super(SoftTripletLoss, self).__init__()
+        self.margin = margin
+        self.normalize_feature = normalize_feature
+
+    def __call__(self, emb1, emb2, label):
+        if self.normalize_feature:
+            # equal to cosine similarity
+            emb1 = F.normalize(emb1)
+            emb2 = F.normalize(emb2)
+
+        mat_dist = euclidean_dist(emb1, emb1)
+        assert mat_dist.size(0) == mat_dist.size(1)
+        N = mat_dist.size(0)
+        mat_sim = label.expand(N, N).eq(label.expand(N, N).t()).float()
+
+        dist_ap, dist_an, ap_idx, an_idx = hard_example_mining(mat_dist, label, return_inds=True)
+        assert dist_an.size(0) == dist_ap.size(0)
+        triple_dist = torch.stack((dist_ap, dist_an), dim=1)
+        triple_dist = F.log_softmax(triple_dist, dim=1)
+        if (self.margin is not None):
+            loss = (- self.margin * triple_dist[:, 0] - (1 - self.margin) * triple_dist[:, 1]).mean()
+            return loss
+
+        mat_dist_ref = euclidean_dist(emb2, emb2)
+        dist_ap_ref = torch.gather(mat_dist_ref, 1, ap_idx.view(N, 1).expand(N, N))[:, 0]
+        dist_an_ref = torch.gather(mat_dist_ref, 1, an_idx.view(N, 1).expand(N, N))[:, 0]
+        triple_dist_ref = torch.stack((dist_ap_ref, dist_an_ref), dim=1)
+        triple_dist_ref = F.softmax(triple_dist_ref, dim=1).detach()
+
+        loss = (- triple_dist_ref * triple_dist).mean(0).sum()
+        return loss
+
+
 class TripletLossUncertainty(object):
     def __init__(self, margin=None):
         self.margin = margin
@@ -137,6 +175,7 @@ class TripletLossUncertainty(object):
         precision = torch.exp(-log_var)
         loss = precision.cuda() * loss + log_var.cuda()
         return loss, dist_ap, dist_an
+
 
 class CrossEntropyLabelSmooth(nn.Module):
     """Cross entropy loss with label smoothing regularizer.
@@ -168,6 +207,18 @@ class CrossEntropyLabelSmooth(nn.Module):
         targets = (1 - self.epsilon) * targets + self.epsilon / self.num_classes
         loss = (- targets * log_probs).mean(0).sum()
         return loss
+
+
+class SoftEntropy(nn.Module):
+    def __init__(self):
+        super(SoftEntropy, self).__init__()
+        self.logsoftmax = nn.LogSoftmax(dim=1).cuda()
+
+    def forward(self, inputs, targets):
+        log_probs = self.logsoftmax(inputs)
+        loss = (- F.softmax(targets, dim=1).detach() * log_probs).mean(0).sum()
+        return loss
+
 
 class CrossEntropyLabelSmoothUncertainty(nn.Module):
         def __init__(self, num_classes, epsilon=0.1, use_gpu=True):

@@ -5,8 +5,8 @@ MODEL:
   IF_LABELSMOOTH: 'off'
   IF_WITH_CENTER: 'no'
   IF_UNCENTAINTY: 'off'
-  init_1: ''
-  init_2: ''
+  init_1: '/home/yhl/log/reid_strong_baseline/baseline/0/resnet50_model_80.pth'
+  init_2: '/home/yhl/log/reid_strong_baseline/baseline2/2Dbaseline/resnet50_model_80.pth'
 
 INPUT:
   SIZE_TRAIN: [256, 128]

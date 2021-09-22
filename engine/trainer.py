@@ -20,6 +20,12 @@ global ITER
 ITER = 0
 
 
+def _update_ema_variables(model, ema_model, alpha, global_step):
+    alpha = min(1 - 1 / (global_step + 1), alpha)
+    for ema_param, param in zip(ema_model.parameters(), model.parameters()):
+        ema_param.data.mul_(alpha).add_(1 - alpha, param.data)
+
+
 def create_supervised_trainer(model, optimizer, loss_fn,
                               device=None):
     """
@@ -210,23 +216,35 @@ def create_supervised_trainer_mmt(model_1, model_2, model_1_ema, model_2_ema,
         model_2.train()
         model_1_ema.train()
         model_2_ema.train()
-
         optimizer_1.zero_grad()
         optimizer_2.zero_grad()
-        img, target = batch
+        img, img2, target = batch
         img = img.to(device) if torch.cuda.device_count() >= 1 else img
+        img2 = img2.to(device) if torch.cuda.device_count() >= 1 else img2
         target = target.to(device) if torch.cuda.device_count() >= 1 else target
-        score, feat = model(img)
-        loss = loss_fn(score, feat, target)
+
+        score_1, feat_1 = model_1(img)
+        score_2, feat_2 = model_2(img2)
+
+        score_1_ema, feat_1_ema = model_1_ema(img)
+        score_2_ema, feat_2_ema = model_2_ema(img2)
+
+        loss, all_loss = loss_fn(score_1, score_2, feat_1, feat_2, score_1_ema, score_2_ema,
+                       feat_1_ema, feat_2_ema, target)
         loss.backward()
         optimizer_1.step()
         optimizer_2.step()
+
+        #len(train_loader) = 346
+        _update_ema_variables(model_1, model_1_ema, 0.999, engine.state.epoch * 346 + ITER)
+        _update_ema_variables(model_2, model_2_ema, 0.999, engine.state.epoch * 346 + ITER)
+
         # compute acc
-        acc = (score.max(1)[1] == target).float().mean()
-        return loss.item(), acc.item()
+        acc_1 = (score_1_ema.max(1)[1] == target).float().mean()
+        acc_2 = (score_2_ema.max(1)[1] == target).float().mean()
+        return loss.item(), all_loss, acc_1.item(), acc_2.item()
 
     return Engine(_update)
-
 
 
 def create_supervised_evaluator(model, metrics,
@@ -250,10 +268,10 @@ def create_supervised_evaluator(model, metrics,
     def _inference(engine, batch):
         model.eval()
         with torch.no_grad():
-            data, pids, camids = batch
+            data, pids, clothids, camids = batch
             data = data.to(device) if torch.cuda.device_count() >= 1 else data
             feat = model(data)
-            return feat, pids, camids
+            return feat, pids, clothids, camids
 
     engine = Engine(_inference)
 
@@ -348,8 +366,8 @@ def do_train(
             logger.info("Epoch[{}] Iteration[{}/{}] Loss: {:.3f}, "
                         "Acc: {:.3f}, Base Lr: {:.2e}"
                         .format(engine.state.epoch, ITER, len(train_loader),
-                                 engine.state.metrics['avg_loss'],
-                                 engine.state.metrics['avg_acc'],
+                                engine.state.metrics['avg_loss'],
+                                engine.state.metrics['avg_acc'],
                                 scheduler.get_lr()[0]))
         if len(train_loader) == ITER:
             ITER = 0
@@ -426,6 +444,7 @@ def do_train_part(
     RunningAverage(output_transform=lambda x: x[1][0]).attach(trainer, 'avg_acc1')
     RunningAverage(output_transform=lambda x: x[1][1]).attach(trainer, 'avg_acc2')
     RunningAverage(output_transform=lambda x: x[1][2]).attach(trainer, 'avg_acc3')
+
     # RunningAverage(output_transform=lambda x: x[1][3]).attach(trainer, 'avg_acc4')
     # RunningAverage(output_transform=lambda x: x[1][4]).attach(trainer, 'avg_acc5')
     # RunningAverage(output_transform=lambda x: x[1][5]).attach(trainer, 'avg_acc6')
@@ -633,6 +652,7 @@ def do_train_part(
     torch.multiprocessing.set_sharing_strategy('file_system')
     trainer.run(train_loader, max_epochs=epochs)
 
+
 def do_train_with_center(
         cfg,
         model,
@@ -779,6 +799,7 @@ def do_train_with_center_part(
     RunningAverage(output_transform=lambda x: x[1][0]).attach(trainer, 'avg_acc1')
     RunningAverage(output_transform=lambda x: x[1][1]).attach(trainer, 'avg_acc2')
     RunningAverage(output_transform=lambda x: x[1][2]).attach(trainer, 'avg_acc3')
+
     # RunningAverage(output_transform=lambda x: x[1][3]).attach(trainer, 'avg_acc4')
     # RunningAverage(output_transform=lambda x: x[1][4]).attach(trainer, 'avg_acc5')
     # RunningAverage(output_transform=lambda x: x[1][5]).attach(trainer, 'avg_acc6')
@@ -786,7 +807,7 @@ def do_train_with_center_part(
 
     @trainer.on(Events.STARTED)
     def start_training(engine):
-            engine.state.epoch = start_epoch
+        engine.state.epoch = start_epoch
 
     @trainer.on(Events.EPOCH_STARTED)
     def adjust_learning_rate(engine):
@@ -806,7 +827,7 @@ def do_train_with_center_part(
                                 engine.state.metrics['avg_loss3'],
                                 engine.state.metrics['avg_acc1'], engine.state.metrics['avg_acc2'],
                                 engine.state.metrics['avg_acc3'],
-                                scheduler.get_lr()[0], log_var[0], log_var[1], log_var[2],))
+                                scheduler.get_lr()[0], log_var[0], log_var[1], log_var[2], ))
         if len(train_loader) == ITER:
             ITER = 0
 
@@ -858,19 +879,32 @@ def do_train_mmt(
     logger.info("Start training")
     trainer = create_supervised_trainer_mmt(model_1, model_2, model_1_ema, model_2_ema,
                                             optimizer_1, optimizer_2, loss_fn, device=device)
-    evaluator = create_supervised_evaluator_mmt(model, metrics={
+
+    evaluator_1_ema = create_supervised_evaluator(model_1_ema, metrics={
+        'r1_mAP': R1_mAP(num_query, max_rank=50, feat_norm=cfg.TEST.FEAT_NORM)}, device=device)
+    evaluator_2_ema = create_supervised_evaluator(model_2_ema, metrics={
         'r1_mAP': R1_mAP(num_query, max_rank=50, feat_norm=cfg.TEST.FEAT_NORM)}, device=device)
 
     checkpointer = ModelCheckpoint(output_dir, cfg.MODEL.NAME, checkpoint_period, n_saved=10, require_empty=False)
     timer = Timer(average=True)
 
-    trainer.add_event_handler(Events.EPOCH_COMPLETED, checkpointer, {'model': model, 'optimizer': optimizer})
+    trainer.add_event_handler(Events.EPOCH_COMPLETED, checkpointer, {'model_1_ema': model_1_ema,
+                                                                     'model_2_ema': model_2_ema,
+                                                                     'optimizer_1': optimizer_1,
+                                                                     'optimizer_2': optimizer_2})
     timer.attach(trainer, start=Events.EPOCH_STARTED, resume=Events.ITERATION_STARTED,
                  pause=Events.ITERATION_COMPLETED, step=Events.ITERATION_COMPLETED)
 
     # average metric to attach on trainer
     RunningAverage(output_transform=lambda x: x[0]).attach(trainer, 'avg_loss')
-    RunningAverage(output_transform=lambda x: x[1]).attach(trainer, 'avg_acc')
+    RunningAverage(output_transform=lambda x: x[1][0]).attach(trainer, 'loss_tri_1')
+    RunningAverage(output_transform=lambda x: x[1][1]).attach(trainer, 'loss_tri_2')
+    RunningAverage(output_transform=lambda x: x[1][2]).attach(trainer, 'loss_ce_1')
+    RunningAverage(output_transform=lambda x: x[1][3]).attach(trainer, 'loss_ce_2')
+    RunningAverage(output_transform=lambda x: x[1][4]).attach(trainer, 'loss_tri_soft')
+    RunningAverage(output_transform=lambda x: x[1][5]).attach(trainer, 'loss_ce_soft')
+    RunningAverage(output_transform=lambda x: x[2]).attach(trainer, 'avg_acc_1')
+    RunningAverage(output_transform=lambda x: x[3]).attach(trainer, 'avg_acc_2')
 
     @trainer.on(Events.STARTED)
     def start_training(engine):
@@ -885,11 +919,19 @@ def do_train_mmt(
         global ITER
         ITER += 1
         if ITER % log_period == 0:
-            logger.info("Epoch[{}] Iteration[{}/{}] Loss: {:.3f}, "
-                        "Acc: {:.3f}, Base Lr: {:.2e}"
+            logger.info("Epoch[{}] Iteration[{}/{}] Loss: {:.3f}, loss_tri_1: {:.3f}, loss_tri_2: {:.3f}, "
+                        "loss_ce_1: {:.3f}, loss_ce_2: {:.3f}, loss_tri_soft: {:.3f}, loss_ce_soft: {:.3f}, "
+                        "Acc1: {:.3f}, Acc2: {:.3f}, Base Lr: {:.2e}"
                         .format(engine.state.epoch, ITER, len(train_loader),
-                                 engine.state.metrics['avg_loss'],
-                                 engine.state.metrics['avg_acc'],
+                                engine.state.metrics['avg_loss'],
+                                engine.state.metrics['loss_tri_1'],
+                                engine.state.metrics['loss_tri_2'],
+                                engine.state.metrics['loss_ce_1'],
+                                engine.state.metrics['loss_ce_2'],
+                                engine.state.metrics['loss_tri_soft'],
+                                engine.state.metrics['loss_ce_soft'],
+                                engine.state.metrics['avg_acc_1'],
+                                engine.state.metrics['avg_acc_2'],
                                 scheduler.get_lr()[0]))
         if len(train_loader) == ITER:
             ITER = 0
@@ -906,11 +948,18 @@ def do_train_mmt(
     @trainer.on(Events.EPOCH_COMPLETED)
     def log_validation_results(engine):
         if engine.state.epoch % eval_period == 0:
-            evaluator.run(val_loader)
-            cmc, mAP = evaluator.state.metrics['r1_mAP']
+            evaluator_1_ema.run(val_loader)
+            cmc, mAP = evaluator_1_ema.state.metrics['r1_mAP']
             logger.info("Validation Results - Epoch: {}".format(engine.state.epoch))
             logger.info("mAP: {:.1%}".format(mAP))
             for r in [1, 5, 10]:
-                logger.info("CMC curve, Rank-{:<3}:{:.1%}".format(r, cmc[r - 1]))
+                logger.info("evaluator_1_ema CMC curve, Rank-{:<3}:{:.1%}".format(r, cmc[r - 1]))
+
+            evaluator_2_ema.run(val_loader)
+            cmc, mAP = evaluator_2_ema.state.metrics['r1_mAP']
+            logger.info("Validation Results - Epoch: {}".format(engine.state.epoch))
+            logger.info("mAP: {:.1%}".format(mAP))
+            for r in [1, 5, 10]:
+                logger.info("evaluator_2_ema CMC curve, Rank-{:<3}:{:.1%}".format(r, cmc[r - 1]))
 
     trainer.run(train_loader, max_epochs=epochs)

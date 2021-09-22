@@ -17,7 +17,7 @@ def make_optimizer(cfg, model, log_var=None):
         if "bias" in key:
             lr = cfg.SOLVER.BASE_LR * cfg.SOLVER.BIAS_LR_FACTOR
             weight_decay = cfg.SOLVER.WEIGHT_DECAY_BIAS
-        params += [{"params": [value], "lr": lr, "weight_decay": weight_decay}]
+        params += [{"params": [value], "initial_lr": lr, "weight_decay": weight_decay}]
     if log_var is not None:
         lr = cfg.SOLVER.BASE_LR
         weight_decay = cfg.SOLVER.WEIGHT_DECAY

@@ -18,8 +18,8 @@ class PRCC(BaseImageDataset):
     def __init__(self, root='/home/yhl/data', verbose=True, **kwargs):
         super(PRCC, self).__init__()
         self.dataset_dir = osp.join(root, self.dataset_dir)
-        self.train_dir = osp.join(self.dataset_dir, 'train2D')
-        print("dataset is train2D")
+        self.train_dir = osp.join(self.dataset_dir, 'train')
+        print("dataset is train")
         # self.train_dir = osp.join(self.dataset_dir, 'trainac')
         # print("dataset is trainac")
         # self.train_dir = osp.join(self.dataset_dir, 'tvcrop3')
@@ -86,10 +86,6 @@ class PRCC(BaseImageDataset):
             pid = int(img_path.split("/")[-1][:3])
             clothid = 0
             camid = img_path.split("/")[-1][4]
-            # if dir_path.find("train") != -1:
-            #     msk_path = osp.join('/home/yhl/data/prcc/train_mask', img_path.split("/")[-1][:-3] + 'npy')
-            # else:
-            #     msk_path = ""
             if relabel: pid = pid2label[pid]
             dataset.append((img_path, pid, clothid, camid))
             # dataset.append((img_path, pid, clothid, camid, msk_path))
