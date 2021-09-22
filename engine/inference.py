@@ -99,11 +99,12 @@ def part_evaluator(model, metrics,
         model.eval()
         # model.train()
         with torch.no_grad():
-            # data, pids, camids = batch
-            data, pids, clothids, camids, pc = batch
+            data, pids, clothids, camids = batch
+            # data, pids, clothids, camids, pc = batch
             data = data.to(device) if torch.cuda.device_count() >= 1 else data
             # img2 = img2.to(device) if torch.cuda.device_count() >= 1 else img2
-            feat = model(data, pc)
+            feat = model(data)
+            # feat = model(data, pc)
             # feat = model(data, img2)
             return feat, pids, clothids, camids
 
