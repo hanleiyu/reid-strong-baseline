@@ -54,6 +54,9 @@ def create_model(cfg, num_classes):
     model_2.load_param(cfg.MODEL.init_2)
     model_1_ema.load_param(cfg.MODEL.init_1)
     model_2_ema.load_param(cfg.MODEL.init_2)
+    with torch.no_grad():
+        model_1_ema.classifier.weight.set_(model_1.classifier.weight)
+        model_2_ema.classifier.weight.set_(model_2.classifier.weight)
 
     for param in model_1_ema.parameters():
         param.detach_()

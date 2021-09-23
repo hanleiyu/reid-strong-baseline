@@ -216,6 +216,13 @@ def create_supervised_trainer_mmt(model_1, model_2, model_1_ema, model_2_ema,
         model_2.train()
         model_1_ema.train()
         model_2_ema.train()
+
+        # for k,v in model_1.state_dict().items():
+        #     if v.equal(model_1_ema.state_dict()[k]):
+        #         print("yes")
+        #     else:
+        #         print(k)
+
         optimizer_1.zero_grad()
         optimizer_2.zero_grad()
         img, img2, target = batch
@@ -242,6 +249,8 @@ def create_supervised_trainer_mmt(model_1, model_2, model_1_ema, model_2_ema,
         # compute acc
         acc_1 = (score_1_ema.max(1)[1] == target).float().mean()
         acc_2 = (score_2_ema.max(1)[1] == target).float().mean()
+        acc_3 = (score_1.max(1)[1] == target).float().mean()
+        acc_4 = (score_2.max(1)[1] == target).float().mean()
         return loss.item(), all_loss, acc_1.item(), acc_2.item()
 
     return Engine(_update)
